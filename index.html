@@ -3,402 +3,555 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>P2P Room - Chat + Voice + Whiteboard</title>
+<title>Space</title>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #e8f5e9;
+  --surface: #ffffff;
+  --surface-card: #d1fae5;
+  --primary: #00c97e;
+  --primary-dark: #059669;
+  --text-main: #0a1f14;
+  --text-sec: #065f46;
+  --text-muted: #047857;
+  --border: rgba(0, 201, 126, 0.2);
+  --shadow: 0 8px 32px rgba(0, 201, 126, 0.15);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
 body {
-    font-family: 'Inter', sans-serif;
-    background: #0a0a0a;
-    color: #ececec;
-    height: 100vh;
-    overflow: hidden;
+  font-family: 'Poppins', sans-serif;
+  background: var(--bg);
+  color: var(--text-main);
+  height: 100vh;
+  overflow: hidden;
 }
+
 .app {
-    width: 100%;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
-.header {
-    padding: 12px 16px;
-    background: #141414;
-    border-bottom: 1px solid #262626;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-}
-.status {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: #9ca3af;
-}
-.dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #ef4444;
-}
-.dot.online {
-    background: #34d399;
-    box-shadow: 0 0 12px #34d399;
-}
-.controls {
-    display: flex;
-    gap: 8px;
-}
-.ctrl-btn {
-    padding: 6px 12px;
-    background: #1a1a1a;
-    border: 1px solid #262626;
-    border-radius: 8px;
-    color: #ececec;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-}
-.ctrl-btn.active {
-    background: #34d399;
-    border-color: #34d399;
-    color: #0a0a0a;
-}
-.ctrl-btn.danger {
-    background: #ef4444;
-    border-color: #ef4444;
-    color: #fff;
-}
+
+/* Screens */
 .screen {
-    flex: 1;
-    display: none;
-    overflow: hidden;
+  flex: 1;
+  display: none;
+  overflow: hidden;
 }
+
 .screen.active { display: flex; }
-.home {
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    gap: 16px;
+
+/* Landing - Full Screen Create */
+.landing {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: linear-gradient(135deg, var(--bg) 0%, #f0fdf4 100%);
 }
-.logo {
-    text-align: center;
-    margin-bottom: 20px;
+
+.landing-content {
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
 }
-.logo-icon {
-    width: 64px;
-    height: 64px;
-    background: linear-gradient(135deg, #34d399, #10b981);
-    border-radius: 18px;
-    margin: 0 auto 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+
+.logo-large {
+  width: 96px;
+  height: 96px;
+  background: linear-gradient(135deg, var(--primary), #34d399);
+  border-radius: 28px;
+  margin: 0 auto 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 40px rgba(0, 201, 126, 0.25);
 }
-.logo h1 {
-    font-size: 24px;
-    font-weight: 700;
-    margin-bottom: 8px;
+
+.landing h1 {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text-main);
+  letter-spacing: -0.5px;
 }
-.logo p {
-    font-size: 13px;
-    color: #9ca3af;
+
+.landing p {
+  font-size: 16px;
+  color: var(--text-sec);
+  margin-bottom: 48px;
+  line-height: 1.6;
 }
-.btn {
-    width: 100%;
-    max-width: 320px;
-    padding: 14px;
-    border-radius: 12px;
-    border: none;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
+
+.create-btn {
+  width: 100%;
+  padding: 18px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 6px 24px rgba(0, 201, 126, 0.3);
 }
-.btn:active { transform: scale(0.98); }
-.btn-primary {
-    background: #34d399;
-    color: #0a0a0a;
+
+.create-btn:active {
+  transform: scale(0.97);
+  background: var(--primary-dark);
 }
-.btn-secondary {
-    background: #1a1a1a;
-    border: 1px solid #262626;
-    color: #ececec;
+
+.join-link-btn {
+  margin-top: 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-sec);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
 }
-.setup {
-    flex-direction: column;
-    padding: 24px;
-    gap: 20px;
-    max-width: 500px;
-    margin: 0 auto;
-    width: 100%;
-    overflow-y: auto;
-}
-.step {
-    background: #141414;
-    border: 1px solid #262626;
-    border-radius: 14px;
-    padding: 18px;
-}
-.step h3 {
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 8px;
-}
-.step p {
-    font-size: 12px;
-    color: #9ca3af;
-    line-height: 1.6;
-    margin-bottom: 12px;
-}
-.code-box {
-    background: #1a1a1a;
-    border: 1px solid #262626;
-    border-radius: 10px;
-    padding: 12px;
-    font-family: monospace;
-    font-size: 14px;
-    text-align: center;
-    font-weight: 600;
-    color: #34d399;
-    margin-bottom: 10px;
-    letter-spacing: 2px;
-}
-input {
-    width: 100%;
-    padding: 12px;
-    background: #1a1a1a;
-    border: 1px solid #262626;
-    border-radius: 10px;
-    color: #ececec;
-    font-size: 14px;
-    text-align: center;
-    letter-spacing: 2px;
-    font-weight: 600;
-    outline: none;
-}
-input:focus {
-    border-color: #34d399;
-}
+
+/* Room Screen */
 .room {
-    flex-direction: row;
+  flex-direction: column;
 }
+
+.room-header {
+  padding: 12px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 201, 126, 0.08);
+}
+
+.room-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.room-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.room-status {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.share-btn {
+  padding: 8px 16px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.share-btn:active { transform: scale(0.95); }
+
+/* Share Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.modal.active { display: flex; }
+
+.modal-content {
+  background: var(--surface);
+  border-radius: 24px;
+  padding: 28px;
+  max-width: 380px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.modal-header h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.modal-header p {
+  font-size: 14px;
+  color: var(--text-sec);
+}
+
+.qr-box {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.link-box {
+  background: var(--surface-card);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.link-text {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-main);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: monospace;
+}
+
+.copy-btn {
+  padding: 8px 14px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.close-modal {
+  width: 100%;
+  padding: 12px;
+  background: var(--surface-card);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-main);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Join Screen */
+.join-screen {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.join-box {
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: var(--shadow);
+}
+
+.join-box h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.join-box p {
+  font-size: 14px;
+  color: var(--text-sec);
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.input-field {
+  width: 100%;
+  padding: 14px;
+  background: var(--surface-card);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  font-family: monospace;
+  margin-bottom: 16px;
+  outline: none;
+}
+
+.input-field:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 201, 126, 0.1);
+}
+
+/* Whiteboard + Chat */
+.workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .whiteboard {
-    flex: 1;
-    background: #fff;
-    position: relative;
-    display: flex;
-    flex-direction: column;
+  flex: 1;
+  background: #fff;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--border);
 }
-.board-header {
-    padding: 8px 12px;
-    background: #141414;
-    border-bottom: 1px solid #262626;
-    display: flex;
-    gap: 8px;
-    align-items: center;
+
+.tools {
+  padding: 10px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
-.color-btn {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    border: 2px solid #262626;
-    cursor: pointer;
+
+.tool-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
 }
-.color-btn.active {
-    border-color: #34d399;
-    box-shadow: 0 0 0 2px #34d399;
+
+.tool-btn.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 201, 126, 0.15);
 }
+
 #canvas {
-    flex: 1;
-    cursor: crosshair;
-    touch-action: none;
+  flex: 1;
+  cursor: crosshair;
+  touch-action: none;
 }
-.chat-panel {
-    width: 320px;
-    background: #0a0a0a;
-    border-left: 1px solid #262626;
-    display: flex;
-    flex-direction: column;
+
+.chat-area {
+  height: 40vh;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
 }
+
 .messages {
-    flex: 1;
-    padding: 16px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
+
 .msg {
-    max-width: 85%;
-    padding: 10px 14px;
-    border-radius: 14px;
-    font-size: 13px;
-    line-height: 1.5;
-    word-wrap: break-word;
-    animation: slideIn 0.2s ease;
+  max-width: 75%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-wrap: break-word;
 }
-@keyframes slideIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+
 .msg.me {
-    align-self: flex-end;
-    background: #34d399;
-    color: #0a0a0a;
-    border-bottom-right-radius: 4px;
+  align-self: flex-end;
+  background: var(--primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
 }
+
 .msg.peer {
-    align-self: flex-start;
-    background: #1a1a1a;
-    border: 1px solid #262626;
-    color: #ececec;
-    border-bottom-left-radius: 4px;
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-bottom-left-radius: 4px;
 }
-.input-bar {
-    padding: 12px;
-    background: #141414;
-    border-top: 1px solid #262626;
-    display: flex;
-    gap: 8px;
+
+.input-row {
+  padding: 12px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 10px;
 }
-.input-bar input {
-    flex: 1;
-    text-align: left;
-    letter-spacing: normal;
-    font-weight: 400;
-    font-size: 13px;
+
+.msg-input {
+  flex: 1;
+  padding: 11px 14px;
+  background: var(--surface-card);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-size: 14px;
+  outline: none;
 }
+
 .send-btn {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    background: #34d399;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #0a0a0a;
-}
-.send-btn:active { transform: scale(0.92); }
-@media (max-width: 768px) {
-   .room { flex-direction: column; }
-   .chat-panel {
-        width: 100%;
-        height: 40vh;
-        border-left: none;
-        border-top: 1px solid #262626;
-    }
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--primary);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
 </head>
 <body>
 
 <div class="app">
-    <div class="header">
-        <div class="status">
-            <div class="dot" id="statusDot"></div>
-            <span id="statusText">Offline</span>
-        </div>
-        <div class="controls">
-            <button class="ctrl-btn" id="micBtn" style="display:none;">🎤 Mute</button>
-            <button class="ctrl-btn" id="clearBtn" style="display:none;">Clear Board</button>
-            <button class="ctrl-btn danger" id="leaveBtn" style="display:none;">Leave</button>
-        </div>
-    </div>
-
-    <div class="screen active" id="homeScreen">
-        <div class="home">
-            <div class="logo">
-                <div class="logo-icon">
-                    <svg width="32" height="32" fill="none" stroke="#0a0a0a" stroke-width="2.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+    <!-- Landing Screen -->
+    <div class="screen active" id="landingScreen">
+        <div class="landing">
+            <div class="landing-content">
+                <div class="logo-large">
+                    <svg width="48" height="48" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                     </svg>
                 </div>
-                <h1>P2P Room</h1>
-                <p>Chat + Voice + Whiteboard</p>
-            </div>
-            <button class="btn btn-primary" id="createRoom">Create Room</button>
-            <button class="btn btn-secondary" id="joinRoom">Join Room</button>
-        </div>
-    </div>
-
-    <div class="screen" id="setupScreen">
-        <div class="setup">
-            <div class="step" id="createStep">
-                <h3>Your Room ID</h3>
-                <p>Share this 6-digit ID with your friend</p>
-                <div class="code-box" id="myId">------</div>
-                <button class="btn btn-primary" id="copyId">Copy ID</button>
-                <p style="margin-top:12px;">Waiting for friend to join...</p>
-            </div>
-            <div class="step" id="joinStep">
-                <h3>Enter Friend's Room ID</h3>
-                <p>Ask your friend for their 6-digit ID</p>
-                <input type="text" id="peerIdInput" placeholder="000000" maxlength="6">
-                <button class="btn btn-primary" id="connectBtn" style="margin-top:12px;">Connect</button>
+                <h1>Create Space</h1>
+                <p>Start an instant room for chat, voice & whiteboard. Share with one click.</p>
+                <button class="create-btn" id="createSpaceBtn">Create Space</button>
+                <button class="join-link-btn" id="joinLinkBtn">Have a link? Join space</button>
             </div>
         </div>
     </div>
 
+    <!-- Join Screen -->
+    <div class="screen" id="joinScreen">
+        <div class="join-screen">
+            <div class="join-box">
+                <h2>Join Space</h2>
+                <p>Enter the space ID or paste the full link</p>
+                <input type="text" class="input-field" id="spaceIdInput" placeholder="Paste space link or ID">
+                <button class="create-btn" id="joinSpaceBtn">Join Space</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Room Screen -->
     <div class="screen room" id="roomScreen">
-        <div class="whiteboard">
-            <div class="board-header">
-                <div class="color-btn active" data-color="#000000" style="background:#000"></div>
-                <div class="color-btn" data-color="#ef4444" style="background:#ef4444"></div>
-                <div class="color-btn" data-color="#3b82f6" style="background:#3b82f6"></div>
-                <div class="color-btn" data-color="#34d399" style="background:#34d399"></div>
-                <div class="color-btn" data-color="#f59e0b" style="background:#f59e0b"></div>
+        <div class="room-header">
+            <div class="room-info">
+                <div class="live-dot"></div>
+                <div>
+                    <div class="room-title">Your Space</div>
+                    <div class="room-status" id="peerStatus">Waiting for others...</div>
+                </div>
             </div>
-            <canvas id="canvas"></canvas>
+            <button class="share-btn" id="shareSpaceBtn">Share</button>
         </div>
-        <div class="chat-panel">
-            <div class="messages" id="messages"></div>
-            <div class="input-bar">
-                <input type="text" id="msgInput" placeholder="Type a message...">
-                <button class="send-btn" id="sendBtn">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                    </svg>
-                </button>
+
+        <div class="workspace">
+            <div class="whiteboard">
+                <div class="tools">
+                    <div class="tool-btn active" data-color="#000000" style="background:#000"></div>
+                    <div class="tool-btn" data-color="#ef4444" style="background:#ef4444"></div>
+                    <div class="tool-btn" data-color="#3b82f6" style="background:#3b82f6"></div>
+                    <div class="tool-btn" data-color="#00c97e" style="background:#00c97e"></div>
+                </div>
+                <canvas id="canvas"></canvas>
+            </div>
+
+            <div class="chat-area">
+                <div class="messages" id="messages"></div>
+                <div class="input-row">
+                    <input type="text" class="msg-input" id="msgInput" placeholder="Message...">
+                    <button class="send-btn" id="sendBtn">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<audio id="remoteAudio" autoplay></audio>
+<!-- Share Modal -->
+<div class="modal" id="shareModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Share Space</h3>
+            <p>Anyone with this link can join</p>
+        </div>
+        <div class="qr-box" id="qrcode"></div>
+        <div class="link-box">
+            <div class="link-text" id="spaceLink">Loading...</div>
+            <button class="copy-btn" id="copyLinkBtn">Copy</button>
+        </div>
+        <button class="close-modal" id="closeModalBtn">Done</button>
+    </div>
+</div>
 
 <script>
-const homeScreen = document.getElementById('homeScreen');
-const setupScreen = document.getElementById('setupScreen');
+const landingScreen = document.getElementById('landingScreen');
+const joinScreen = document.getElementById('joinScreen');
 const roomScreen = document.getElementById('roomScreen');
-const createRoom = document.getElementById('createRoom');
-const joinRoom = document.getElementById('joinRoom');
-const myId = document.getElementById('myId');
-const copyId = document.getElementById('copyId');
-const peerIdInput = document.getElementById('peerIdInput');
-const connectBtn = document.getElementById('connectBtn');
+const createSpaceBtn = document.getElementById('createSpaceBtn');
+const joinLinkBtn = document.getElementById('joinLinkBtn');
+const joinSpaceBtn = document.getElementById('joinSpaceBtn');
+const spaceIdInput = document.getElementById('spaceIdInput');
+const shareSpaceBtn = document.getElementById('shareSpaceBtn');
+const shareModal = document.getElementById('shareModal');
+const closeModalBtn = document.getElementById('closeModalBtn');
+const copyLinkBtn = document.getElementById('copyLinkBtn');
+const spaceLink = document.getElementById('spaceLink');
+const peerStatus = document.getElementById('peerStatus');
 const messages = document.getElementById('messages');
 const msgInput = document.getElementById('msgInput');
 const sendBtn = document.getElementById('sendBtn');
-const statusDot = document.getElementById('statusDot');
-const statusText = document.getElementById('statusText');
-const createStep = document.getElementById('createStep');
-const joinStep = document.getElementById('joinStep');
-const micBtn = document.getElementById('micBtn');
-const clearBtn = document.getElementById('clearBtn');
-const leaveBtn = document.getElementById('leaveBtn');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const remoteAudio = document.getElementById('remoteAudio');
 
 let peer = null;
 let conn = null;
-let call = null;
-let localStream = null;
+let currentSpaceId = null;
 let isDrawing = false;
 let currentColor = '#000000';
 let lastX = 0, lastY = 0;
@@ -406,102 +559,56 @@ let lastX = 0, lastY = 0;
 function showScreen(screen) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     screen.classList.add('active');
-    const inRoom = screen === roomScreen;
-    micBtn.style.display = inRoom? 'block' : 'none';
-    clearBtn.style.display = inRoom? 'block' : 'none';
-    leaveBtn.style.display = inRoom? 'block' : 'none';
 }
 
-function randomId() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+async function generateSpaceId() {
+    const array = new Uint8Array(16);
+    crypto.getRandomValues(array);
+    const hash = await crypto.subtle.digest('SHA-256', array);
+    const hex = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    const BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    let num = BigInt('0x' + hex);
+    let id = '';
+    while (num > 0) {
+        id = BASE58[Number(num % 58n)] + id;
+        num = num / 58n;
+    }
+    return id.slice(0, 12);
 }
 
-// Whiteboard setup
 function resizeCanvas() {
     const rect = canvas.parentElement.getBoundingClientRect();
     canvas.width = rect.width;
-    canvas.height = rect.height - 45;
+    canvas.height = rect.height - 56;
 }
+
 window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
 
-document.querySelectorAll('.color-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentColor = btn.dataset.color;
-    });
-});
+// Create Space Flow
+createSpaceBtn.addEventListener('click', async () => {
+    createSpaceBtn.textContent = 'Creating...';
+    createSpaceBtn.disabled = true;
 
-function startDraw(e) {
-    isDrawing = true;
-    const rect = canvas.getBoundingClientRect();
-    lastX = (e.clientX || e.touches[0].clientX) - rect.left;
-    lastY = (e.clientY || e.touches[0].clientY) - rect.top;
-}
+    currentSpaceId = await generateSpaceId();
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareUrl = `${baseUrl}?space=${currentSpaceId}`;
 
-function draw(e) {
-    if (!isDrawing) return;
-    e.preventDefault();
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || e.touches[0].clientX) - rect.left;
-    const y = (e.clientY || e.touches[0].clientY) - rect.top;
-
-    ctx.strokeStyle = currentColor;
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-
-    // Send to peer
-    if (conn && conn.open) {
-        conn.send({ type: 'draw', x1: lastX, y1: lastY, x2: x, y2: y, color: currentColor });
-    }
-
-    lastX = x;
-    lastY = y;
-}
-
-function stopDraw() {
-    isDrawing = false;
-}
-
-canvas.addEventListener('mousedown', startDraw);
-canvas.addEventListener('mousemove', draw);
-canvas.addEventListener('mouseup', stopDraw);
-canvas.addEventListener('mouseleave', stopDraw);
-canvas.addEventListener('touchstart', startDraw);
-canvas.addEventListener('touchmove', draw);
-canvas.addEventListener('touchend', stopDraw);
-
-clearBtn.addEventListener('click', () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (conn && conn.open) {
-        conn.send({ type: 'clear' });
-    }
-});
-
-// PeerJS logic
-createRoom.addEventListener('click', async () => {
-    showScreen(setupScreen);
-    createStep.style.display = 'block';
-    joinStep.style.display = 'none';
-
-    const id = randomId();
-    peer = new Peer(id, {
-        config: {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:global.stun.twilio.com:3478' }
-            ]
-        }
+    peer = new Peer(currentSpaceId, {
+        config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
     });
 
-    peer.on('open', (id) => {
-        myId.textContent = id;
-        statusText.textContent = 'Waiting...';
+    peer.on('open', () => {
+        showScreen(roomScreen);
+        resizeCanvas();
+        spaceLink.textContent = shareUrl;
+        new QRCode(document.getElementById('qrcode'), {
+            text: shareUrl,
+            width: 200,
+            height: 200,
+            colorDark: '#0a1f14',
+            colorLight: '#ffffff',
+        });
+        setTimeout(() => shareModal.classList.add('active'), 300);
     });
 
     peer.on('connection', (connection) => {
@@ -509,69 +616,53 @@ createRoom.addEventListener('click', async () => {
         setupConnection();
     });
 
-    peer.on('call', async (incomingCall) => {
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        incomingCall.answer(localStream);
-        call = incomingCall;
-        call.on('stream', (stream) => {
-            remoteAudio.srcObject = stream;
-        });
-    });
-
     peer.on('error', (err) => {
-        alert('Error: ' + err.type);
-        resetAll();
+        alert('Failed to create space: ' + err.type);
+        createSpaceBtn.textContent = 'Create Space';
+        createSpaceBtn.disabled = false;
     });
 });
 
-joinRoom.addEventListener('click', () => {
-    showScreen(setupScreen);
-    createStep.style.display = 'none';
-    joinStep.style.display = 'block';
+// Join Flow
+joinLinkBtn.addEventListener('click', () => showScreen(joinScreen));
+
+joinSpaceBtn.addEventListener('click', () => {
+    let input = spaceIdInput.value.trim();
+    let spaceId = input;
+
+    // Extract ID from full URL
+    if (input.includes('space=')) {
+        spaceId = input.split('space=')[1].split('&')[0];
+    }
+
+    if (!spaceId) return alert('Enter valid space ID or link');
 
     peer = new Peer({
-        config: {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:global.stun.twilio.com:3478' }
-            ]
-        }
+        config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
     });
 
-    peer.on('error', (err) => {
-        alert('Error: ' + err.type);
-        resetAll();
+    peer.on('open', () => {
+        conn = peer.connect(spaceId);
+        setupConnection();
+        showScreen(roomScreen);
+        resizeCanvas();
     });
 });
 
-copyId.addEventListener('click', () => {
-    navigator.clipboard.writeText(myId.textContent);
-    copyId.textContent = 'Copied!';
-    setTimeout(() => copyId.textContent = 'Copy ID', 2000);
-});
-
-connectBtn.addEventListener('click', async () => {
-    const peerId = peerIdInput.value.trim();
-    if (peerId.length!== 6) return alert('Enter 6-digit ID');
-
-    conn = peer.connect(peerId);
-
-    // Start voice call
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-    call = peer.call(peerId, localStream);
-    call.on('stream', (stream) => {
-        remoteAudio.srcObject = stream;
-    });
-
-    setupConnection();
+// Auto-join from URL
+window.addEventListener('load', () => {
+    const params = new URLSearchParams(window.location.search);
+    const spaceId = params.get('space');
+    if (spaceId) {
+        spaceIdInput.value = spaceId;
+        showScreen(joinScreen);
+        setTimeout(() => joinSpaceBtn.click(), 500);
+    }
 });
 
 function setupConnection() {
     conn.on('open', () => {
-        statusDot.classList.add('online');
-        statusText.textContent = 'Connected';
-        showScreen(roomScreen);
-        resizeCanvas();
+        peerStatus.textContent = 'Connected with peer';
     });
 
     conn.on('data', (data) => {
@@ -591,27 +682,78 @@ function setupConnection() {
     });
 
     conn.on('close', () => {
-        alert('Friend disconnected');
-        resetAll();
-    });
-
-    conn.on('error', () => {
-        alert('Connection failed');
-        resetAll();
+        peerStatus.textContent = 'Peer disconnected';
     });
 }
 
-sendBtn.addEventListener('click', sendMsg);
-msgInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') sendMsg();
+// Canvas Drawing
+document.querySelectorAll('.tool-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentColor = btn.dataset.color;
+    });
 });
+
+function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: (e.clientX || e.touches[0].clientX) - rect.left,
+        y: (e.clientY || e.touches[0].clientY) - rect.top
+    };
+}
+
+canvas.addEventListener('mousedown', (e) => {
+    isDrawing = true;
+    const pos = getPos(e);
+    lastX = pos.x; lastY = pos.y;
+});
+
+canvas.addEventListener('mousemove', (e) => {
+    if (!isDrawing) return;
+    const pos = getPos(e);
+    ctx.strokeStyle = currentColor;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    if (conn && conn.open) {
+        conn.send({ type: 'draw', x1: lastX, y1: lastY, x2: pos.x, y2: pos.y, color: currentColor });
+    }
+    lastX = pos.x; lastY = pos.y;
+});
+
+canvas.addEventListener('mouseup', () => isDrawing = false);
+canvas.addEventListener('touchstart', (e) => { isDrawing = true; const pos = getPos(e); lastX = pos.x; lastY = pos.y; });
+canvas.addEventListener('touchmove', (e) => {
+    if (!isDrawing) return;
+    e.preventDefault();
+    const pos = getPos(e);
+    ctx.strokeStyle = currentColor;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    if (conn && conn.open) {
+        conn.send({ type: 'draw', x1: lastX, y1: lastY, x2: pos.x, y2: pos.y, color: currentColor });
+    }
+    lastX = pos.x; lastY = pos.y;
+});
+canvas.addEventListener('touchend', () => isDrawing = false);
+
+// Chat
+sendBtn.addEventListener('click', sendMsg);
+msgInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMsg(); });
 
 function sendMsg() {
     const text = msgInput.value.trim();
-    if (!text ||!conn ||!conn.open) return;
-
-    conn.send(text);
+    if (!text) return;
     addMessage(text, 'me');
+    if (conn && conn.open) conn.send(text);
     msgInput.value = '';
 }
 
@@ -623,33 +765,14 @@ function addMessage(text, type) {
     messages.scrollTop = messages.scrollHeight;
 }
 
-micBtn.addEventListener('click', () => {
-    if (!localStream) return;
-    const enabled = localStream.getAudioTracks()[0].enabled;
-    localStream.getAudioTracks()[0].enabled =!enabled;
-    micBtn.textContent = enabled? '🔇 Unmute' : '🎤 Mute';
-    micBtn.classList.toggle('active',!enabled);
+// Share Modal
+shareSpaceBtn.addEventListener('click', () => shareModal.classList.add('active'));
+closeModalBtn.addEventListener('click', () => shareModal.classList.remove('active'));
+copyLinkBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(spaceLink.textContent);
+    copyLinkBtn.textContent = 'Copied!';
+    setTimeout(() => copyLinkBtn.textContent = 'Copy', 2000);
 });
-
-leaveBtn.addEventListener('click', () => {
-    resetAll();
-});
-
-function resetAll() {
-    if (peer) peer.destroy();
-    if (localStream) localStream.getTracks().forEach(t => t.stop());
-    peer = null;
-    conn = null;
-    call = null;
-    localStream = null;
-    statusDot.classList.remove('online');
-    statusText.textContent = 'Offline';
-    messages.innerHTML = '';
-    peerIdInput.value = '';
-    myId.textContent = '------';
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    showScreen(homeScreen);
-}
 </script>
 </body>
 </html>
