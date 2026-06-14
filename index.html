@@ -7,7 +7,414 @@
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<style>
+:root {
+  --bg: #e8f5e9;
+  --surface: #ffffff;
+  --surface-card: #d1fae5;
+  --surface-hover: #bff5d8;
+  --primary: #00c97e;
+  --primary-dark: #059669;
+  --text-main: #0a1f14;
+  --text-sec: #065f46;
+  --text-muted: #047857;
+  --border: rgba(0, 201, 126, 0.2);
+  --shadow: 0 4px 16px rgba(0, 201, 126, 0.12);
+  --danger: #ef4444;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background: var(--bg);
+  color: var(--text-main);
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.app { width: 100%; height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
+.screen { flex: 1; display: none; overflow: hidden; min-height: 0; }
+.screen.active { display: flex; }
+
+/* Dashboard */
+.dashboard { flex-direction: column; background: var(--bg); }
+
+.dash-header {
+  padding: 16px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0, 201, 126, 0.08);
+}
+
+.dash-title { font-size: 22px; font-weight: 700; color: var(--text-main); }
+
+.create-space-btn {
+  padding: 10px 18px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+  box-shadow: 0 4px 12px rgba(0, 201, 126, 0.25);
+}
+
+.create-space-btn:active { transform: scale(0.96); }
+.dash-content { flex: 1; overflow-y: auto; padding: 20px; }
+
+.section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+
+.spaces-grid { display: grid; gap: 12px; margin-bottom: 28px; }
+
+.space-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow);
+}
+
+.space-card:active { transform: scale(0.98); }
+.space-card:hover { background: var(--surface-card); border-color: var(--primary); }
+
+.space-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 8px;
+}
+
+.space-name { font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
+.space-meta { font-size: 12px; color: var(--text-sec); display: flex; gap: 12px; }
+
+.space-badge {
+  padding: 4px 10px;
+  background: var(--surface-card);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-sec);
+}
+
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+.empty-state svg { width: 64px; height: 64px; margin-bottom: 16px; opacity: 0.5; }
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.modal.active { display: flex; }
+
+.modal-content {
+  background: var(--surface);
+  border-radius: 24px;
+  padding: 28px;
+  max-width: 440px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header { margin-bottom: 24px; }
+.modal-header h3 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.modal-header p { font-size: 14px; color: var(--text-sec); }
+
+.form-group { margin-bottom: 20px; }
+.form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-sec); margin-bottom: 8px; }
+
+.form-input,.form-select {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--surface-card);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  outline: none;
+  font-family: 'Poppins', sans-serif;
+}
+
+.form-input:focus,.form-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 201, 126, 0.1);
+}
+
+.form-actions { display: flex; gap: 12px; margin-top: 28px; }
+
+.btn {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(0, 201, 126, 0.3); }
+.btn-secondary { background: var(--surface-card); border: 1.5px solid var(--border); color: var(--text-main); }
+
+/* Room Screen */
+.room { flex-direction: column; }
+
+.room-header {
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.room-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+
+.back-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--surface-card);
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.room-info { flex: 1; min-width: 0; }
+.room-name { font-size: 15px; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.room-status { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.room-actions { display: flex; gap: 8px; }
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--surface-card);
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--text-main);
+}
+
+.icon-btn:active { transform: scale(0.92); }
+.icon-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.icon-btn.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+
+.workspace { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+
+.whiteboard-container {
+  flex: 1;
+  background: #fff;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--border);
+  min-height: 0;
+}
+
+.tools-bar {
+  padding: 8px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+
+.color-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.color-btn.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 201, 126, 0.15);
+}
+
+.tool-divider { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
+#canvas { flex: 1; cursor: crosshair; touch-action: none; display: block; }
+
+.chat-section {
+  height: 35vh;
+  max-height: 35vh;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.messages {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.msg {
+  max-width: 70%;
+  padding: 8px 12px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.msg.me {
+  align-self: flex-end;
+  background: var(--primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.msg.peer {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+
+.msg.system {
+  align-self: center;
+  background: var(--surface-card);
+  color: var(--text-sec);
+  font-size: 11px;
+  padding: 4px 10px;
+}
+
+.input-bar {
+  padding: 10px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.msg-input {
+  flex: 1;
+  padding: 10px 12px;
+  background: var(--surface-card);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  outline: none;
+  font-family: 'Poppins', sans-serif;
+}
+
+.send-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--primary);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Share Modal */
+.qr-container {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  margin: 20px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.link-container {
+  background: var(--surface-card);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.link-text {
+  flex: 1;
+  font-size: 12px;
+  font-family: monospace;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copy-link-btn {
+  padding: 8px 12px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+</style>
 </head>
 <body>
 
@@ -26,15 +433,7 @@
             </div>
             <div class="dash-content">
                 <div class="section-title">Recent Spaces</div>
-                <div class="spaces-grid" id="spacesGrid">
-                    <div class="empty-state">
-                        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                        </svg>
-                        <p>No spaces yet. Create your first space!</p>
-                    </div>
-                </div>
-
+                <div class="spaces-grid" id="spacesGrid"></div>
                 <div class="section-title">Friends Activity</div>
                 <div class="spaces-grid" id="friendsGrid">
                     <div class="empty-state">
@@ -168,7 +567,474 @@
         <button class="btn btn-secondary" id="closeShareBtn">Done</button>
     </div>
 </div>
+<script>
+// State
+let peer = null;
+let connections = [];
+let currentSpace = null;
+let spaces = JSON.parse(localStorage.getItem('spaces') || '[]');
+let friends = JSON.parse(localStorage.getItem('friends') || '[]');
+let isDrawing = false;
+let currentColor = '#000000';
+let lastX = 0, lastY = 0;
+let localStream = null;
+let micEnabled = false;
+let call = null;
+let isHost = false;
 
-<script src="app.js"></script>
+// Elements
+const dashboardScreen = document.getElementById('dashboardScreen');
+const roomScreen = document.getElementById('roomScreen');
+const createSpaceBtn = document.getElementById('createSpaceBtn');
+const createModal = document.getElementById('createModal');
+const cancelCreateBtn = document.getElementById('cancelCreateBtn');
+const confirmCreateBtn = document.getElementById('confirmCreateBtn');
+const spaceNameInput = document.getElementById('spaceNameInput');
+const maxPeopleInput = document.getElementById('maxPeopleInput');
+const spaceDescInput = document.getElementById('spaceDescInput');
+const spacesGrid = document.getElementById('spacesGrid');
+const friendsGrid = document.getElementById('friendsGrid');
+const backBtn = document.getElementById('backBtn');
+const roomName = document.getElementById('roomName');
+const peerCount = document.getElementById('peerCount');
+const micBtn = document.getElementById('micBtn');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+const addFriendBtn = document.getElementById('addFriendBtn');
+const shareBtn = document.getElementById('shareBtn');
+const shareModal = document.getElementById('shareModal');
+const closeShareBtn = document.getElementById('closeShareBtn');
+const copyLinkBtn = document.getElementById('copyLinkBtn');
+const spaceLink = document.getElementById('spaceLink');
+const messages = document.getElementById('messages');
+const msgInput = document.getElementById('msgInput');
+const sendBtn = document.getElementById('sendBtn');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const clearBtn = document.getElementById('clearBtn');
+
+function showScreen(screen) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    screen.classList.add('active');
+}
+
+function resizeCanvas() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height - 48;
+}
+
+window.addEventListener('resize', resizeCanvas);
+
+// Load spaces on init
+function renderSpaces() {
+    if (spaces.length === 0) {
+        spacesGrid.innerHTML = `
+            <div class="empty-state">
+                <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                </svg>
+                <p>No spaces yet. Create your first space!</p>
+            </div>
+        `;
+    } else {
+        spacesGrid.innerHTML = spaces.map(space => `
+            <div class="space-card" data-id="${space.id}">
+                <div class="space-card-header">
+                    <div>
+                        <div class="space-name">${space.name}</div>
+                        <div class="space-meta">
+                            <span>${space.maxPeople} people max</span>
+                            <span>•</span>
+                            <span>${new Date(space.created).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                    <div class="space-badge">Active</div>
+                </div>
+            </div>
+        `).join('');
+
+        document.querySelectorAll('.space-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const space = spaces.find(s => s.id === card.dataset.id);
+                enterSpace(space, true);
+            });
+        });
+    }
+}
+
+renderSpaces();
+
+// Create Space Flow
+createSpaceBtn.addEventListener('click', () => {
+    createModal.classList.add('active');
+    spaceNameInput.value = '';
+    spaceDescInput.value = '';
+    maxPeopleInput.value = '5';
+});
+
+cancelCreateBtn.addEventListener('click', () => {
+    createModal.classList.remove('active');
+});
+
+confirmCreateBtn.addEventListener('click', async () => {
+    const name = spaceNameInput.value.trim() || 'Untitled Space';
+    const maxPeople = parseInt(maxPeopleInput.value);
+    const desc = spaceDescInput.value.trim();
+
+    confirmCreateBtn.textContent = 'Creating...';
+    confirmCreateBtn.disabled = true;
+
+    const spaceId = await generateSpaceId();
+    const space = {
+        id: spaceId,
+        name,
+        desc,
+        maxPeople,
+        created: Date.now(),
+        url: `${window.location.origin}${window.location.pathname}?space=${spaceId}`
+    };
+
+    spaces.unshift(space);
+    localStorage.setItem('spaces', JSON.stringify(spaces));
+    renderSpaces();
+
+    createModal.classList.remove('active');
+    confirmCreateBtn.textContent = 'Create Space';
+    confirmCreateBtn.disabled = false;
+
+    enterSpace(space, true);
+});
+
+async function generateSpaceId() {
+    const array = new Uint8Array(16);
+    crypto.getRandomValues(array);
+    const hash = await crypto.subtle.digest('SHA-256', array);
+    const hex = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    const BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    let num = BigInt('0x' + hex);
+    let id = '';
+    while (num > 0) {
+        id = BASE58[Number(num % 58n)] + id;
+        num = num / 58n;
+    }
+    return id.slice(0, 12);
+}
+
+// Peer config with better STUN/TURN
+const peerConfig = {
+    config: {
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+        ]
+    },
+    debug: 2
+};
+
+// Enter Space - KEY FIX: host vs guest logic
+async function enterSpace(space, host = false) {
+    currentSpace = space;
+    isHost = host;
+    roomName.textContent = space.name;
+    showScreen(roomScreen);
+    setTimeout(resizeCanvas, 50);
+
+    const peerId = host? space.id : undefined;
+    peer = new Peer(peerId, peerConfig);
+
+    peer.on('open', (id) => {
+        console.log('My peer ID:', id);
+        if (host) {
+            peerCount.textContent = 'Waiting for others';
+            addMessage('Space created. Share link to invite', 'system');
+        } else {
+            connectToHost(space.id);
+        }
+
+        spaceLink.textContent = space.url;
+        document.getElementById('qrcode').innerHTML = '';
+        new QRCode(document.getElementById('qrcode'), {
+            text: space.url,
+            width: 200,
+            height: 200,
+            colorDark: '#0a1f14',
+            colorLight: '#ffffff',
+        });
+    });
+
+    peer.on('connection', (connection) => {
+        console.log('Incoming connection from:', connection.peer);
+        connections.push(connection);
+        setupConnection(connection);
+        updatePeerCount();
+    });
+
+    peer.on('call', async (incomingCall) => {
+        try {
+            if (!localStream) {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            }
+            incomingCall.answer(localStream);
+            call = incomingCall;
+            call.on('stream', (remoteStream) => {
+                const audio = new Audio();
+                audio.srcObject = remoteStream;
+                audio.play();
+            });
+            micEnabled = true;
+            micBtn.classList.add('active');
+        } catch (err) {
+            console.error('Call answer error:', err);
+        }
+    });
+
+    peer.on('error', (err) => {
+        console.error('Peer error:', err);
+        if (err.type === 'unavailable-id') {
+            addMessage('Space already active. Joining as guest...', 'system');
+            setTimeout(() => enterSpace(space, false), 500);
+        } else if (err.type === 'peer-unavailable') {
+            addMessage('Host is offline. Try again later.', 'system');
+        }
+    });
+}
+
+function connectToHost(hostId) {
+    console.log('Connecting to host:', hostId);
+    addMessage('Connecting to space...', 'system');
+    const conn = peer.connect(hostId);
+    connections.push(conn);
+    setupConnection(conn);
+}
+
+function setupConnection(connection) {
+    connection.on('open', () => {
+        console.log('Connected to:', connection.peer);
+        updatePeerCount();
+        addMessage('Someone joined the space', 'system');
+    });
+
+    connection.on('data', (data) => {
+        if (typeof data === 'string') {
+            addMessage(data, 'peer');
+        } else if (data.type === 'draw') {
+            ctx.strokeStyle = data.color;
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(data.x1, data.y1);
+            ctx.lineTo(data.x2, data.y2);
+            ctx.stroke();
+        } else if (data.type === 'clear') {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        if (isHost) broadcast(data, connection.peer);
+    });
+
+    connection.on('close', () => {
+        connections = connections.filter(c => c!== connection);
+        updatePeerCount();
+        addMessage('Someone left the space', 'system');
+    });
+
+    connection.on('error', (err) => {
+        console.error('Connection error:', err);
+    });
+}
+
+function broadcast(data, excludePeer = null) {
+    connections.forEach(c => {
+        if (c.open && c.peer!== excludePeer) c.send(data);
+    });
+}
+
+function updatePeerCount() {
+    peerCount.textContent = connections.length > 0? `${connections.length} connected` : 'Waiting for others';
+}
+
+// Back to dashboard
+backBtn.addEventListener('click', () => {
+    if (peer) peer.destroy();
+    if (localStream) localStream.getTracks().forEach(t => t.stop());
+    peer = null;
+    connections = [];
+    localStream = null;
+    micEnabled = false;
+    isHost = false;
+    micBtn.classList.remove('active');
+    messages.innerHTML = '';
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    showScreen(dashboardScreen);
+});
+
+// Drawing
+document.querySelectorAll('.color-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentColor = btn.dataset.color;
+    });
+});
+
+function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: (e.clientX || e.touches[0].clientX) - rect.left,
+        y: (e.clientY || e.touches[0].clientY) - rect.top
+    };
+}
+
+canvas.addEventListener('mousedown', (e) => {
+    isDrawing = true;
+    const pos = getPos(e);
+    lastX = pos.x; lastY = pos.y;
+});
+
+canvas.addEventListener('mousemove', (e) => {
+    if (!isDrawing) return;
+    const pos = getPos(e);
+    ctx.strokeStyle = currentColor;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    const drawData = { type: 'draw', x1: lastX, y1: lastY, x2: pos.x, y2: pos.y, color: currentColor };
+    broadcast(drawData);
+    lastX = pos.x; lastY = pos.y;
+});
+
+canvas.addEventListener('mouseup', () => isDrawing = false);
+canvas.addEventListener('touchstart', (e) => { isDrawing = true; const pos = getPos(e); lastX = pos.x; lastY = pos.y; });
+canvas.addEventListener('touchmove', (e) => {
+    if (!isDrawing) return;
+    e.preventDefault();
+    const pos = getPos(e);
+    ctx.strokeStyle = currentColor;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    const drawData = { type: 'draw', x1: lastX, y1: lastY, x2: pos.x, y2: pos.y, color: currentColor };
+    broadcast(drawData);
+    lastX = pos.x; lastY = pos.y;
+});
+canvas.addEventListener('touchend', () => isDrawing = false);
+
+clearBtn.addEventListener('click', () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    broadcast({ type: 'clear' });
+});
+
+// Chat
+sendBtn.addEventListener('click', sendMsg);
+msgInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMsg(); });
+
+function sendMsg() {
+    const text = msgInput.value.trim();
+    if (!text) return;
+    addMessage(text, 'me');
+    broadcast(text);
+    msgInput.value = '';
+}
+
+function addMessage(text, type) {
+    const msg = document.createElement('div');
+    msg.className = `msg ${type}`;
+    msg.textContent = text;
+    messages.appendChild(msg);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+// Mic Toggle
+micBtn.addEventListener('click', async () => {
+    try {
+        if (!micEnabled) {
+            localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            micEnabled = true;
+            micBtn.classList.add('active');
+
+            connections.forEach(c => {
+                if (c.open) {
+                    const outgoingCall = peer.call(c.peer, localStream);
+                    outgoingCall.on('stream', (remoteStream) => {
+                        const audio = new Audio();
+                        audio.srcObject = remoteStream;
+                        audio.play();
+                    });
+                }
+            });
+        } else {
+            if (localStream) {
+                localStream.getTracks().forEach(t => t.stop());
+                localStream = null;
+            }
+            if (call) {
+                call.close();
+                call = null;
+            }
+            micEnabled = false;
+            micBtn.classList.remove('active');
+        }
+    } catch (err) {
+        alert('Mic permission denied');
+        console.error(err);
+    }
+});
+
+// Fullscreen Toggle
+fullscreenBtn.addEventListener('click', () => {
+    const elem = document.documentElement;
+    if (!document.fullscreenElement) {
+        elem.requestFullscreen().catch(err => console.log(err));
+    } else {
+        document.exitFullscreen();
+    }
+});
+
+// Add Friend Button - opens share modal
+addFriendBtn.addEventListener('click', () => {
+    shareModal.classList.add('active');
+});
+
+// Share Modal
+shareBtn.addEventListener('click', () => {
+    shareModal.classList.add('active');
+});
+
+closeShareBtn.addEventListener('click', () => {
+    shareModal.classList.remove('active');
+});
+
+copyLinkBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(spaceLink.textContent);
+    copyLinkBtn.textContent = 'Copied!';
+    setTimeout(() => copyLinkBtn.textContent = 'Copy', 2000);
+});
+
+// Auto-join from URL
+window.addEventListener('load', () => {
+    const params = new URLSearchParams(window.location.search);
+    const spaceId = params.get('space');
+    if (spaceId) {
+        const space = spaces.find(s => s.id === spaceId);
+        if (space) {
+            enterSpace(space, false);
+        } else {
+            const guestSpace = {
+                id: spaceId,
+                name: 'Shared Space',
+                maxPeople: 10,
+                created: Date.now(),
+                url: window.location.href
+            };
+            enterSpace(guestSpace, false);
+        }
+    }
+});
+</script>
 </body>
 </html>
