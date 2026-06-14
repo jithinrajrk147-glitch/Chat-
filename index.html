@@ -3,473 +3,47 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Space</title>
+<title>Spaces</title>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root {
-  --bg: #e8f5e9;
-  --surface: #ffffff;
-  --surface-card: #d1fae5;
-  --primary: #00c97e;
-  --primary-dark: #059669;
-  --text-main: #0a1f14;
-  --text-sec: #065f46;
-  --text-muted: #047857;
-  --border: rgba(0, 201, 126, 0.2);
-  --shadow: 0 8px 32px rgba(0, 201, 126, 0.15);
-}
-
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-body {
-  font-family: 'Poppins', sans-serif;
-  background: var(--bg);
-  color: var(--text-main);
-  height: 100vh;
-  overflow: hidden;
-}
-
-.app {
-  width: 100%;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Screens */
-.screen {
-  flex: 1;
-  display: none;
-  overflow: hidden;
-}
-
-.screen.active { display: flex; }
-
-/* Landing - Full Screen Create */
-.landing {
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 32px;
-  background: linear-gradient(135deg, var(--bg) 0%, #f0fdf4 100%);
-}
-
-.landing-content {
-  text-align: center;
-  max-width: 400px;
-  width: 100%;
-}
-
-.logo-large {
-  width: 96px;
-  height: 96px;
-  background: linear-gradient(135deg, var(--primary), #34d399);
-  border-radius: 28px;
-  margin: 0 auto 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 12px 40px rgba(0, 201, 126, 0.25);
-}
-
-.landing h1 {
-  font-size: 36px;
-  font-weight: 700;
-  margin-bottom: 12px;
-  color: var(--text-main);
-  letter-spacing: -0.5px;
-}
-
-.landing p {
-  font-size: 16px;
-  color: var(--text-sec);
-  margin-bottom: 48px;
-  line-height: 1.6;
-}
-
-.create-btn {
-  width: 100%;
-  padding: 18px;
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  border-radius: 16px;
-  font-size: 17px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 6px 24px rgba(0, 201, 126, 0.3);
-}
-
-.create-btn:active {
-  transform: scale(0.97);
-  background: var(--primary-dark);
-}
-
-.join-link-btn {
-  margin-top: 16px;
-  background: transparent;
-  border: none;
-  color: var(--text-sec);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-/* Room Screen */
-.room {
-  flex-direction: column;
-}
-
-.room-header {
-  padding: 12px 16px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(0, 201, 126, 0.08);
-}
-
-.room-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--primary);
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.room-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.room-status {
-  font-size: 12px;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.share-btn {
-  padding: 8px 16px;
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.share-btn:active { transform: scale(0.95); }
-
-/* Share Modal */
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  padding: 20px;
-}
-
-.modal.active { display: flex; }
-
-.modal-content {
-  background: var(--surface);
-  border-radius: 24px;
-  padding: 28px;
-  max-width: 380px;
-  width: 100%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-.modal-header h3 {
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-.modal-header p {
-  font-size: 14px;
-  color: var(--text-sec);
-}
-
-.qr-box {
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: center;
-}
-
-.link-box {
-  background: var(--surface-card);
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 14px;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.link-text {
-  flex: 1;
-  font-size: 13px;
-  color: var(--text-main);
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: monospace;
-}
-
-.copy-btn {
-  padding: 8px 14px;
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.close-modal {
-  width: 100%;
-  padding: 12px;
-  background: var(--surface-card);
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
-  color: var(--text-main);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-/* Join Screen */
-.join-screen {
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 32px;
-}
-
-.join-box {
-  background: var(--surface);
-  border-radius: 20px;
-  padding: 32px;
-  max-width: 400px;
-  width: 100%;
-  box-shadow: var(--shadow);
-}
-
-.join-box h2 {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 8px;
-  text-align: center;
-}
-
-.join-box p {
-  font-size: 14px;
-  color: var(--text-sec);
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-.input-field {
-  width: 100%;
-  padding: 14px;
-  background: var(--surface-card);
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  text-align: center;
-  font-family: monospace;
-  margin-bottom: 16px;
-  outline: none;
-}
-
-.input-field:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(0, 201, 126, 0.1);
-}
-
-/* Whiteboard + Chat */
-.workspace {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.whiteboard {
-  flex: 1;
-  background: #fff;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  border-bottom: 1px solid var(--border);
-}
-
-.tools {
-  padding: 10px 14px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.tool-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  border: 2px solid var(--border);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.tool-btn.active {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(0, 201, 126, 0.15);
-}
-
-#canvas {
-  flex: 1;
-  cursor: crosshair;
-  touch-action: none;
-}
-
-.chat-area {
-  height: 40vh;
-  background: var(--bg);
-  display: flex;
-  flex-direction: column;
-}
-
-.messages {
-  flex: 1;
-  padding: 16px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.msg {
-  max-width: 75%;
-  padding: 10px 14px;
-  border-radius: 16px;
-  font-size: 14px;
-  line-height: 1.5;
-  word-wrap: break-word;
-}
-
-.msg.me {
-  align-self: flex-end;
-  background: var(--primary);
-  color: #fff;
-  border-bottom-right-radius: 4px;
-}
-
-.msg.peer {
-  align-self: flex-start;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-bottom-left-radius: 4px;
-}
-
-.input-row {
-  padding: 12px;
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  display: flex;
-  gap: 10px;
-}
-
-.msg-input {
-  flex: 1;
-  padding: 11px 14px;
-  background: var(--surface-card);
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
-  font-size: 14px;
-  outline: none;
-}
-
-.send-btn {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: var(--primary);
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="app">
-    <!-- Landing Screen -->
-    <div class="screen active" id="landingScreen">
-        <div class="landing">
-            <div class="landing-content">
-                <div class="logo-large">
-                    <svg width="48" height="48" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+    <!-- Dashboard Screen -->
+    <div class="screen active" id="dashboardScreen">
+        <div class="dashboard">
+            <div class="dash-header">
+                <h1 class="dash-title">Spaces</h1>
+                <button class="create-space-btn" id="createSpaceBtn">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
                     </svg>
-                </div>
-                <h1>Create Space</h1>
-                <p>Start an instant room for chat, voice & whiteboard. Share with one click.</p>
-                <button class="create-btn" id="createSpaceBtn">Create Space</button>
-                <button class="join-link-btn" id="joinLinkBtn">Have a link? Join space</button>
+                    Create Space
+                </button>
             </div>
-        </div>
-    </div>
+            <div class="dash-content">
+                <div class="section-title">Recent Spaces</div>
+                <div class="spaces-grid" id="spacesGrid">
+                    <div class="empty-state">
+                        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                        </svg>
+                        <p>No spaces yet. Create your first space!</p>
+                    </div>
+                </div>
 
-    <!-- Join Screen -->
-    <div class="screen" id="joinScreen">
-        <div class="join-screen">
-            <div class="join-box">
-                <h2>Join Space</h2>
-                <p>Enter the space ID or paste the full link</p>
-                <input type="text" class="input-field" id="spaceIdInput" placeholder="Paste space link or ID">
-                <button class="create-btn" id="joinSpaceBtn">Join Space</button>
+                <div class="section-title">Friends Activity</div>
+                <div class="spaces-grid" id="friendsGrid">
+                    <div class="empty-state">
+                        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        <p>No friend activity yet</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -477,33 +51,68 @@ body {
     <!-- Room Screen -->
     <div class="screen room" id="roomScreen">
         <div class="room-header">
-            <div class="room-info">
-                <div class="live-dot"></div>
-                <div>
-                    <div class="room-title">Your Space</div>
-                    <div class="room-status" id="peerStatus">Waiting for others...</div>
+            <div class="room-left">
+                <button class="back-btn" id="backBtn">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                <div class="room-info">
+                    <div class="room-name" id="roomName">Space</div>
+                    <div class="room-status">
+                        <div class="live-dot"></div>
+                        <span id="peerCount">Waiting for others</span>
+                    </div>
                 </div>
             </div>
-            <button class="share-btn" id="shareSpaceBtn">Share</button>
+            <div class="room-actions">
+                <button class="icon-btn" id="micBtn" title="Mic">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                    </svg>
+                </button>
+                <button class="icon-btn" id="fullscreenBtn" title="Fullscreen">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                    </svg>
+                </button>
+                <button class="icon-btn" id="addFriendBtn" title="Add Friends">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                    </svg>
+                </button>
+                <button class="icon-btn" id="shareBtn" title="Share">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+                    </svg>
+                </button>
+            </div>
         </div>
 
         <div class="workspace">
-            <div class="whiteboard">
-                <div class="tools">
-                    <div class="tool-btn active" data-color="#000000" style="background:#000"></div>
-                    <div class="tool-btn" data-color="#ef4444" style="background:#ef4444"></div>
-                    <div class="tool-btn" data-color="#3b82f6" style="background:#3b82f6"></div>
-                    <div class="tool-btn" data-color="#00c97e" style="background:#00c97e"></div>
+            <div class="whiteboard-container">
+                <div class="tools-bar">
+                    <div class="color-btn active" data-color="#000000" style="background:#000"></div>
+                    <div class="color-btn" data-color="#ef4444" style="background:#ef4444"></div>
+                    <div class="color-btn" data-color="#3b82f6" style="background:#3b82f6"></div>
+                    <div class="color-btn" data-color="#00c97e" style="background:#00c97e"></div>
+                    <div class="color-btn" data-color="#f59e0b" style="background:#f59e0b"></div>
+                    <div class="tool-divider"></div>
+                    <button class="icon-btn" id="clearBtn" title="Clear">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
                 </div>
                 <canvas id="canvas"></canvas>
             </div>
 
-            <div class="chat-area">
+            <div class="chat-section">
                 <div class="messages" id="messages"></div>
-                <div class="input-row">
-                    <input type="text" class="msg-input" id="msgInput" placeholder="Message...">
+                <div class="input-bar">
+                    <input type="text" class="msg-input" id="msgInput" placeholder="Type a message...">
                     <button class="send-btn" id="sendBtn">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                         </svg>
                     </button>
@@ -513,266 +122,53 @@ body {
     </div>
 </div>
 
+<!-- Create Space Modal -->
+<div class="modal" id="createModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Create New Space</h3>
+            <p>Set up your collaborative space</p>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Space Name</label>
+            <input type="text" class="form-input" id="spaceNameInput" placeholder="My Awesome Space" maxlength="30">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Max Participants</label>
+            <select class="form-select" id="maxPeopleInput">
+                <option value="2">2 People</option>
+                <option value="5" selected>5 People</option>
+                <option value="10">10 People</option>
+                <option value="20">20 People</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Description (Optional)</label>
+            <input type="text" class="form-input" id="spaceDescInput" placeholder="What is this space for?">
+        </div>
+        <div class="form-actions">
+            <button class="btn btn-secondary" id="cancelCreateBtn">Cancel</button>
+            <button class="btn btn-primary" id="confirmCreateBtn">Create Space</button>
+        </div>
+    </div>
+</div>
+
 <!-- Share Modal -->
 <div class="modal" id="shareModal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Share Space</h3>
-            <p>Anyone with this link can join</p>
+            <h3>Invite to Space</h3>
+            <p>Share this link or QR code</p>
         </div>
-        <div class="qr-box" id="qrcode"></div>
-        <div class="link-box">
+        <div class="qr-container" id="qrcode"></div>
+        <div class="link-container">
             <div class="link-text" id="spaceLink">Loading...</div>
-            <button class="copy-btn" id="copyLinkBtn">Copy</button>
+            <button class="copy-link-btn" id="copyLinkBtn">Copy</button>
         </div>
-        <button class="close-modal" id="closeModalBtn">Done</button>
+        <button class="btn btn-secondary" id="closeShareBtn">Done</button>
     </div>
 </div>
 
-<script>
-const landingScreen = document.getElementById('landingScreen');
-const joinScreen = document.getElementById('joinScreen');
-const roomScreen = document.getElementById('roomScreen');
-const createSpaceBtn = document.getElementById('createSpaceBtn');
-const joinLinkBtn = document.getElementById('joinLinkBtn');
-const joinSpaceBtn = document.getElementById('joinSpaceBtn');
-const spaceIdInput = document.getElementById('spaceIdInput');
-const shareSpaceBtn = document.getElementById('shareSpaceBtn');
-const shareModal = document.getElementById('shareModal');
-const closeModalBtn = document.getElementById('closeModalBtn');
-const copyLinkBtn = document.getElementById('copyLinkBtn');
-const spaceLink = document.getElementById('spaceLink');
-const peerStatus = document.getElementById('peerStatus');
-const messages = document.getElementById('messages');
-const msgInput = document.getElementById('msgInput');
-const sendBtn = document.getElementById('sendBtn');
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-
-let peer = null;
-let conn = null;
-let currentSpaceId = null;
-let isDrawing = false;
-let currentColor = '#000000';
-let lastX = 0, lastY = 0;
-
-function showScreen(screen) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    screen.classList.add('active');
-}
-
-async function generateSpaceId() {
-    const array = new Uint8Array(16);
-    crypto.getRandomValues(array);
-    const hash = await crypto.subtle.digest('SHA-256', array);
-    const hex = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-    const BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-    let num = BigInt('0x' + hex);
-    let id = '';
-    while (num > 0) {
-        id = BASE58[Number(num % 58n)] + id;
-        num = num / 58n;
-    }
-    return id.slice(0, 12);
-}
-
-function resizeCanvas() {
-    const rect = canvas.parentElement.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height - 56;
-}
-
-window.addEventListener('resize', resizeCanvas);
-
-// Create Space Flow
-createSpaceBtn.addEventListener('click', async () => {
-    createSpaceBtn.textContent = 'Creating...';
-    createSpaceBtn.disabled = true;
-
-    currentSpaceId = await generateSpaceId();
-    const baseUrl = window.location.origin + window.location.pathname;
-    const shareUrl = `${baseUrl}?space=${currentSpaceId}`;
-
-    peer = new Peer(currentSpaceId, {
-        config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
-    });
-
-    peer.on('open', () => {
-        showScreen(roomScreen);
-        resizeCanvas();
-        spaceLink.textContent = shareUrl;
-        new QRCode(document.getElementById('qrcode'), {
-            text: shareUrl,
-            width: 200,
-            height: 200,
-            colorDark: '#0a1f14',
-            colorLight: '#ffffff',
-        });
-        setTimeout(() => shareModal.classList.add('active'), 300);
-    });
-
-    peer.on('connection', (connection) => {
-        conn = connection;
-        setupConnection();
-    });
-
-    peer.on('error', (err) => {
-        alert('Failed to create space: ' + err.type);
-        createSpaceBtn.textContent = 'Create Space';
-        createSpaceBtn.disabled = false;
-    });
-});
-
-// Join Flow
-joinLinkBtn.addEventListener('click', () => showScreen(joinScreen));
-
-joinSpaceBtn.addEventListener('click', () => {
-    let input = spaceIdInput.value.trim();
-    let spaceId = input;
-
-    // Extract ID from full URL
-    if (input.includes('space=')) {
-        spaceId = input.split('space=')[1].split('&')[0];
-    }
-
-    if (!spaceId) return alert('Enter valid space ID or link');
-
-    peer = new Peer({
-        config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
-    });
-
-    peer.on('open', () => {
-        conn = peer.connect(spaceId);
-        setupConnection();
-        showScreen(roomScreen);
-        resizeCanvas();
-    });
-});
-
-// Auto-join from URL
-window.addEventListener('load', () => {
-    const params = new URLSearchParams(window.location.search);
-    const spaceId = params.get('space');
-    if (spaceId) {
-        spaceIdInput.value = spaceId;
-        showScreen(joinScreen);
-        setTimeout(() => joinSpaceBtn.click(), 500);
-    }
-});
-
-function setupConnection() {
-    conn.on('open', () => {
-        peerStatus.textContent = 'Connected with peer';
-    });
-
-    conn.on('data', (data) => {
-        if (typeof data === 'string') {
-            addMessage(data, 'peer');
-        } else if (data.type === 'draw') {
-            ctx.strokeStyle = data.color;
-            ctx.lineWidth = 3;
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.moveTo(data.x1, data.y1);
-            ctx.lineTo(data.x2, data.y2);
-            ctx.stroke();
-        } else if (data.type === 'clear') {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
-    });
-
-    conn.on('close', () => {
-        peerStatus.textContent = 'Peer disconnected';
-    });
-}
-
-// Canvas Drawing
-document.querySelectorAll('.tool-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentColor = btn.dataset.color;
-    });
-});
-
-function getPos(e) {
-    const rect = canvas.getBoundingClientRect();
-    return {
-        x: (e.clientX || e.touches[0].clientX) - rect.left,
-        y: (e.clientY || e.touches[0].clientY) - rect.top
-    };
-}
-
-canvas.addEventListener('mousedown', (e) => {
-    isDrawing = true;
-    const pos = getPos(e);
-    lastX = pos.x; lastY = pos.y;
-});
-
-canvas.addEventListener('mousemove', (e) => {
-    if (!isDrawing) return;
-    const pos = getPos(e);
-    ctx.strokeStyle = currentColor;
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-    if (conn && conn.open) {
-        conn.send({ type: 'draw', x1: lastX, y1: lastY, x2: pos.x, y2: pos.y, color: currentColor });
-    }
-    lastX = pos.x; lastY = pos.y;
-});
-
-canvas.addEventListener('mouseup', () => isDrawing = false);
-canvas.addEventListener('touchstart', (e) => { isDrawing = true; const pos = getPos(e); lastX = pos.x; lastY = pos.y; });
-canvas.addEventListener('touchmove', (e) => {
-    if (!isDrawing) return;
-    e.preventDefault();
-    const pos = getPos(e);
-    ctx.strokeStyle = currentColor;
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-    if (conn && conn.open) {
-        conn.send({ type: 'draw', x1: lastX, y1: lastY, x2: pos.x, y2: pos.y, color: currentColor });
-    }
-    lastX = pos.x; lastY = pos.y;
-});
-canvas.addEventListener('touchend', () => isDrawing = false);
-
-// Chat
-sendBtn.addEventListener('click', sendMsg);
-msgInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMsg(); });
-
-function sendMsg() {
-    const text = msgInput.value.trim();
-    if (!text) return;
-    addMessage(text, 'me');
-    if (conn && conn.open) conn.send(text);
-    msgInput.value = '';
-}
-
-function addMessage(text, type) {
-    const msg = document.createElement('div');
-    msg.className = `msg ${type}`;
-    msg.textContent = text;
-    messages.appendChild(msg);
-    messages.scrollTop = messages.scrollHeight;
-}
-
-// Share Modal
-shareSpaceBtn.addEventListener('click', () => shareModal.classList.add('active'));
-closeModalBtn.addEventListener('click', () => shareModal.classList.remove('active'));
-copyLinkBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(spaceLink.textContent);
-    copyLinkBtn.textContent = 'Copied!';
-    setTimeout(() => copyLinkBtn.textContent = 'Copy', 2000);
-});
-</script>
+<script src="app.js"></script>
 </body>
 </html>
