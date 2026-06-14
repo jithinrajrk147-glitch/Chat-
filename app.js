@@ -1,6 +1,7 @@
 // State
 let peer = null;
 let conn = null;
+let connections = []; // support multiple peers
 let currentSpace = null;
 let spaces = JSON.parse(localStorage.getItem('spaces') || '[]');
 let friends = JSON.parse(localStorage.getItem('friends') || '[]');
@@ -10,6 +11,7 @@ let lastX = 0, lastY = 0;
 let localStream = null;
 let micEnabled = false;
 let call = null;
+let isHost = false;
 
 // Elements
 const dashboardScreen = document.getElementById('dashboardScreen');
@@ -76,6 +78,7 @@ function renderSpaces() {
                             <span>•</span>
                             <span>${new Date(space.created).toLocaleDateString()}</span>
                         </div>
+                    </div>
                     <div class="space-badge">Active</div>
                 </div>
             </div>
@@ -84,7 +87,7 @@ function renderSpaces() {
         document.querySelectorAll('.space-card').forEach(card => {
             card.addEventListener('click', () => {
                 const space = spaces.find(s => s.id === card.dataset.id);
-                enterSpace(space);
+                enterSpace(space, true); // true = isHost
             });
         });
     }
@@ -130,7 +133,7 @@ confirmCreateBtn.addEventListener('click', async () => {
     confirmCreateBtn.textContent = 'Create Space';
     confirmCreateBtn.disabled = false;
 
-    enterSpace(space);
+    enterSpace(space, true); // true = isHost
 });
 
 async function generateSpaceId() {
@@ -148,19 +151,38 @@ async function generateSpaceId() {
     return id.slice(0, 12);
 }
 
-// Enter Space
-async function enterSpace(space) {
+// Peer config with better STUN/TURN
+const peerConfig = {
+    config: {
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+        ]
+    },
+    debug: 2
+};
+
+// Enter Space - key fix: host vs guest logic
+async function enterSpace(space, host = false) {
     currentSpace = space;
+    isHost = host;
     roomName.textContent = space.name;
     showScreen(roomScreen);
     setTimeout(resizeCanvas, 50);
 
-    peer = new Peer(space.id, {
-        config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
-    });
+    // Host uses space.id, guest uses random id
+    const peerId = host ? space.id : undefined;
+    peer = new Peer(peerId, peerConfig);
 
-    peer.on('open', () => {
-        peerCount.textContent = 'Waiting for others';
+    peer.on('open', (id) => {
+        console.log('My peer ID:', id);
+        if (host) {
+            peerCount.textContent = 'Waiting for others';
+        } else {
+            // Guest connects to host
+            connectToHost(space.id);
+        }
+        
         spaceLink.textContent = space.url;
         document.getElementById('qrcode').innerHTML = '';
         new QRCode(document.getElementById('qrcode'), {
@@ -173,8 +195,10 @@ async function enterSpace(space) {
     });
 
     peer.on('connection', (connection) => {
-        conn = connection;
-        setupConnection();
+        console.log('Incoming connection from:', connection.peer);
+        connections.push(connection);
+        setupConnection(connection);
+        updatePeerCount();
     });
 
     peer.on('call', async (incomingCall) => {
@@ -198,15 +222,28 @@ async function enterSpace(space) {
 
     peer.on('error', (err) => {
         console.error('Peer error:', err);
+        if (err.type === 'unavailable-id') {
+            alert('Space already active. Joining as guest...');
+            enterSpace(space, false);
+        }
     });
 }
 
-function setupConnection() {
-    conn.on('open', () => {
-        peerCount.textContent = '1 peer connected';
+function connectToHost(hostId) {
+    console.log('Connecting to host:', hostId);
+    conn = peer.connect(hostId);
+    connections.push(conn);
+    setupConnection(conn);
+}
+
+function setupConnection(connection) {
+    connection.on('open', () => {
+        console.log('Connected to:', connection.peer);
+        peerCount.textContent = `${connections.length} connected`;
+        addMessage('Someone joined the space', 'peer');
     });
 
-    conn.on('data', (data) => {
+    connection.on('data', (data) => {
         if (typeof data === 'string') {
             addMessage(data, 'peer');
         } else if (data.type === 'draw') {
@@ -220,11 +257,33 @@ function setupConnection() {
         } else if (data.type === 'clear') {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
+        // Relay to other peers if host
+        if (isHost) {
+            broadcast(data, connection.peer);
+        }
     });
 
-    conn.on('close', () => {
-        peerCount.textContent = 'Peer disconnected';
+    connection.on('close', () => {
+        connections = connections.filter(c => c !== connection);
+        updatePeerCount();
+        addMessage('Someone left the space', 'peer');
     });
+
+    connection.on('error', (err) => {
+        console.error('Connection error:', err);
+    });
+}
+
+function broadcast(data, excludePeer = null) {
+    connections.forEach(c => {
+        if (c.open && c.peer !== excludePeer) {
+            c.send(data);
+        }
+    });
+}
+
+function updatePeerCount() {
+    peerCount.textContent = connections.length > 0 ? `${connections.length} connected` : 'Waiting for others';
 }
 
 // Back to dashboard
@@ -233,8 +292,10 @@ backBtn.addEventListener('click', () => {
     if (localStream) localStream.getTracks().forEach(t => t.stop());
     peer = null;
     conn = null;
+    connections = [];
     localStream = null;
     micEnabled = false;
+    isHost = false;
     micBtn.classList.remove('active');
     messages.innerHTML = '';
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -274,9 +335,8 @@ canvas.addEventListener('mousemove', (e) => {
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
-    if (conn && conn.open) {
-        conn.send({ type: 'draw', x1: lastX, y1: lastY, x2: pos.x, y2: pos.y, color: currentColor });
-    }
+    const drawData = { type: 'draw', x1: lastX, y1: lastY, x2: pos.x, y2: pos.y, color: currentColor };
+    broadcast(drawData);
     lastX = pos.x; lastY = pos.y;
 });
 
@@ -293,16 +353,15 @@ canvas.addEventListener('touchmove', (e) => {
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
-    if (conn && conn.open) {
-        conn.send({ type: 'draw', x1: lastX, y1: lastY, x2: pos.x, y2: pos.y, color: currentColor });
-    }
+    const drawData = { type: 'draw', x1: lastX, y1: lastY, x2: pos.x, y2: pos.y, color: currentColor };
+    broadcast(drawData);
     lastX = pos.x; lastY = pos.y;
 });
 canvas.addEventListener('touchend', () => isDrawing = false);
 
 clearBtn.addEventListener('click', () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (conn && conn.open) conn.send({ type: 'clear' });
+    broadcast({ type: 'clear' });
 });
 
 // Chat
@@ -313,7 +372,7 @@ function sendMsg() {
     const text = msgInput.value.trim();
     if (!text) return;
     addMessage(text, 'me');
-    if (conn && conn.open) conn.send(text);
+    broadcast(text);
     msgInput.value = '';
 }
 
@@ -333,14 +392,17 @@ micBtn.addEventListener('click', async () => {
             micEnabled = true;
             micBtn.classList.add('active');
             
-            if (conn && conn.open) {
-                call = peer.call(conn.peer, localStream);
-                call.on('stream', (remoteStream) => {
-                    const audio = new Audio();
-                    audio.srcObject = remoteStream;
-                    audio.play();
-                });
-            }
+            // Call all connected peers
+            connections.forEach(c => {
+                if (c.open) {
+                    const outgoingCall = peer.call(c.peer, localStream);
+                    outgoingCall.on('stream', (remoteStream) => {
+                        const audio = new Audio();
+                        audio.srcObject = remoteStream;
+                        audio.play();
+                    });
+                }
+            });
         } else {
             if (localStream) {
                 localStream.getTracks().forEach(t => t.stop());
@@ -396,9 +458,9 @@ window.addEventListener('load', () => {
     if (spaceId) {
         const space = spaces.find(s => s.id === spaceId);
         if (space) {
-            enterSpace(space);
+            enterSpace(space, false); // Join as guest
         } else {
-            // Join as guest
+            // Join as guest to unknown space
             const guestSpace = {
                 id: spaceId,
                 name: 'Shared Space',
@@ -406,7 +468,7 @@ window.addEventListener('load', () => {
                 created: Date.now(),
                 url: window.location.href
             };
-            enterSpace(guestSpace);
+            enterSpace(guestSpace, false);
         }
     }
 });
