@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>P2P Chat - PeerJS</title>
+<title>P2P Room - Chat + Voice + Whiteboard</title>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -13,30 +13,22 @@ body {
     background: #0a0a0a;
     color: #ececec;
     height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     overflow: hidden;
 }
 .app {
     width: 100%;
-    max-width: 500px;
     height: 100vh;
-    max-height: 800px;
-    background: #0a0a0a;
-    border: 1px solid #262626;
-    border-radius: 20px;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
 }
 .header {
-    padding: 20px;
+    padding: 12px 16px;
     background: #141414;
     border-bottom: 1px solid #262626;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-shrink: 0;
 }
 .status {
     display: flex;
@@ -55,16 +47,41 @@ body {
     background: #34d399;
     box-shadow: 0 0 12px #34d399;
 }
+.controls {
+    display: flex;
+    gap: 8px;
+}
+.ctrl-btn {
+    padding: 6px 12px;
+    background: #1a1a1a;
+    border: 1px solid #262626;
+    border-radius: 8px;
+    color: #ececec;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.ctrl-btn.active {
+    background: #34d399;
+    border-color: #34d399;
+    color: #0a0a0a;
+}
+.ctrl-btn.danger {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: #fff;
+}
 .screen {
     flex: 1;
     display: none;
-    flex-direction: column;
     overflow: hidden;
 }
 .screen.active { display: flex; }
 .home {
-    padding: 40px 24px;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
+    padding: 24px;
     gap: 16px;
 }
 .logo {
@@ -92,13 +109,13 @@ body {
 }
 .btn {
     width: 100%;
+    max-width: 320px;
     padding: 14px;
     border-radius: 12px;
     border: none;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
 }
 .btn:active { transform: scale(0.98); }
 .btn-primary {
@@ -110,15 +127,13 @@ body {
     border: 1px solid #262626;
     color: #ececec;
 }
-.divider {
-    text-align: center;
-    color: #4b5563;
-    font-size: 12px;
-    margin: 8px 0;
-}
 .setup {
+    flex-direction: column;
     padding: 24px;
     gap: 20px;
+    max-width: 500px;
+    margin: 0 auto;
+    width: 100%;
     overflow-y: auto;
 }
 .step {
@@ -167,25 +182,66 @@ input {
 input:focus {
     border-color: #34d399;
 }
+.room {
+    flex-direction: row;
+}
+.whiteboard {
+    flex: 1;
+    background: #fff;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+.board-header {
+    padding: 8px 12px;
+    background: #141414;
+    border-bottom: 1px solid #262626;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.color-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 2px solid #262626;
+    cursor: pointer;
+}
+.color-btn.active {
+    border-color: #34d399;
+    box-shadow: 0 0 0 2px #34d399;
+}
+#canvas {
+    flex: 1;
+    cursor: crosshair;
+    touch-action: none;
+}
+.chat-panel {
+    width: 320px;
+    background: #0a0a0a;
+    border-left: 1px solid #262626;
+    display: flex;
+    flex-direction: column;
+}
 .messages {
     flex: 1;
-    padding: 20px;
+    padding: 16px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 .msg {
-    max-width: 75%;
-    padding: 12px 16px;
-    border-radius: 16px;
-    font-size: 14px;
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 13px;
     line-height: 1.5;
     word-wrap: break-word;
     animation: slideIn 0.2s ease;
 }
 @keyframes slideIn {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
 }
 .msg.me {
@@ -202,22 +258,23 @@ input:focus {
     border-bottom-left-radius: 4px;
 }
 .input-bar {
-    padding: 16px;
+    padding: 12px;
     background: #141414;
     border-top: 1px solid #262626;
     display: flex;
-    gap: 10px;
+    gap: 8px;
 }
 .input-bar input {
     flex: 1;
     text-align: left;
     letter-spacing: normal;
     font-weight: 400;
+    font-size: 13px;
 }
 .send-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
     background: #34d399;
     border: none;
     cursor: pointer;
@@ -227,26 +284,13 @@ input:focus {
     color: #0a0a0a;
 }
 .send-btn:active { transform: scale(0.92); }
-.back-btn {
-    padding: 8px 14px;
-    background: #1a1a1a;
-    border: 1px solid #262626;
-    border-radius: 8px;
-    color: #ececec;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-}
-.peer-id {
-    font-size: 11px;
-    color: #6b7280;
-    margin-top: 8px;
-}
 @media (max-width: 768px) {
-    .app {
-        border-radius: 0;
-        border: none;
-        max-height: 100vh;
+   .room { flex-direction: column; }
+   .chat-panel {
+        width: 100%;
+        height: 40vh;
+        border-left: none;
+        border-top: 1px solid #262626;
     }
 }
 </style>
@@ -259,7 +303,11 @@ input:focus {
             <div class="dot" id="statusDot"></div>
             <span id="statusText">Offline</span>
         </div>
-        <button class="back-btn" id="backBtn" style="display:none;">Back</button>
+        <div class="controls">
+            <button class="ctrl-btn" id="micBtn" style="display:none;">🎤 Mute</button>
+            <button class="ctrl-btn" id="clearBtn" style="display:none;">Clear Board</button>
+            <button class="ctrl-btn danger" id="leaveBtn" style="display:none;">Leave</button>
+        </div>
     </div>
 
     <div class="screen active" id="homeScreen">
@@ -267,14 +315,13 @@ input:focus {
             <div class="logo">
                 <div class="logo-icon">
                     <svg width="32" height="32" fill="none" stroke="#0a0a0a" stroke-width="2.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                     </svg>
                 </div>
-                <h1>Peer Chat</h1>
-                <p>Powered by PeerJS + Free TURN</p>
+                <h1>P2P Room</h1>
+                <p>Chat + Voice + Whiteboard</p>
             </div>
             <button class="btn btn-primary" id="createRoom">Create Room</button>
-            <div class="divider">or</div>
             <button class="btn btn-secondary" id="joinRoom">Join Room</button>
         </div>
     </div>
@@ -286,7 +333,7 @@ input:focus {
                 <p>Share this 6-digit ID with your friend</p>
                 <div class="code-box" id="myId">------</div>
                 <button class="btn btn-primary" id="copyId">Copy ID</button>
-                <p class="peer-id">Waiting for friend to join...</p>
+                <p style="margin-top:12px;">Waiting for friend to join...</p>
             </div>
             <div class="step" id="joinStep">
                 <h3>Enter Friend's Room ID</h3>
@@ -297,26 +344,39 @@ input:focus {
         </div>
     </div>
 
-    <div class="screen" id="chatScreen">
-        <div class="messages" id="messages"></div>
-        <div class="input-bar">
-            <input type="text" id="msgInput" placeholder="Type a message...">
-            <button class="send-btn" id="sendBtn">
-                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                </svg>
-            </button>
+    <div class="screen room" id="roomScreen">
+        <div class="whiteboard">
+            <div class="board-header">
+                <div class="color-btn active" data-color="#000000" style="background:#000"></div>
+                <div class="color-btn" data-color="#ef4444" style="background:#ef4444"></div>
+                <div class="color-btn" data-color="#3b82f6" style="background:#3b82f6"></div>
+                <div class="color-btn" data-color="#34d399" style="background:#34d399"></div>
+                <div class="color-btn" data-color="#f59e0b" style="background:#f59e0b"></div>
+            </div>
+            <canvas id="canvas"></canvas>
+        </div>
+        <div class="chat-panel">
+            <div class="messages" id="messages"></div>
+            <div class="input-bar">
+                <input type="text" id="msgInput" placeholder="Type a message...">
+                <button class="send-btn" id="sendBtn">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
+<audio id="remoteAudio" autoplay></audio>
+
 <script>
 const homeScreen = document.getElementById('homeScreen');
 const setupScreen = document.getElementById('setupScreen');
-const chatScreen = document.getElementById('chatScreen');
+const roomScreen = document.getElementById('roomScreen');
 const createRoom = document.getElementById('createRoom');
 const joinRoom = document.getElementById('joinRoom');
-const backBtn = document.getElementById('backBtn');
 const myId = document.getElementById('myId');
 const copyId = document.getElementById('copyId');
 const peerIdInput = document.getElementById('peerIdInput');
@@ -328,25 +388,107 @@ const statusDot = document.getElementById('statusDot');
 const statusText = document.getElementById('statusText');
 const createStep = document.getElementById('createStep');
 const joinStep = document.getElementById('joinStep');
+const micBtn = document.getElementById('micBtn');
+const clearBtn = document.getElementById('clearBtn');
+const leaveBtn = document.getElementById('leaveBtn');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const remoteAudio = document.getElementById('remoteAudio');
 
 let peer = null;
 let conn = null;
+let call = null;
+let localStream = null;
+let isDrawing = false;
+let currentColor = '#000000';
+let lastX = 0, lastY = 0;
 
 function showScreen(screen) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     screen.classList.add('active');
-    backBtn.style.display = screen === homeScreen ? 'none' : 'block';
+    const inRoom = screen === roomScreen;
+    micBtn.style.display = inRoom? 'block' : 'none';
+    clearBtn.style.display = inRoom? 'block' : 'none';
+    leaveBtn.style.display = inRoom? 'block' : 'none';
 }
 
 function randomId() {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-createRoom.addEventListener('click', () => {
+// Whiteboard setup
+function resizeCanvas() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height - 45;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+document.querySelectorAll('.color-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentColor = btn.dataset.color;
+    });
+});
+
+function startDraw(e) {
+    isDrawing = true;
+    const rect = canvas.getBoundingClientRect();
+    lastX = (e.clientX || e.touches[0].clientX) - rect.left;
+    lastY = (e.clientY || e.touches[0].clientY) - rect.top;
+}
+
+function draw(e) {
+    if (!isDrawing) return;
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX || e.touches[0].clientX) - rect.left;
+    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+    ctx.strokeStyle = currentColor;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+
+    // Send to peer
+    if (conn && conn.open) {
+        conn.send({ type: 'draw', x1: lastX, y1: lastY, x2: x, y2: y, color: currentColor });
+    }
+
+    lastX = x;
+    lastY = y;
+}
+
+function stopDraw() {
+    isDrawing = false;
+}
+
+canvas.addEventListener('mousedown', startDraw);
+canvas.addEventListener('mousemove', draw);
+canvas.addEventListener('mouseup', stopDraw);
+canvas.addEventListener('mouseleave', stopDraw);
+canvas.addEventListener('touchstart', startDraw);
+canvas.addEventListener('touchmove', draw);
+canvas.addEventListener('touchend', stopDraw);
+
+clearBtn.addEventListener('click', () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (conn && conn.open) {
+        conn.send({ type: 'clear' });
+    }
+});
+
+// PeerJS logic
+createRoom.addEventListener('click', async () => {
     showScreen(setupScreen);
     createStep.style.display = 'block';
     joinStep.style.display = 'none';
-    
+
     const id = randomId();
     peer = new Peer(id, {
         config: {
@@ -356,19 +498,28 @@ createRoom.addEventListener('click', () => {
             ]
         }
     });
-    
+
     peer.on('open', (id) => {
         myId.textContent = id;
         statusText.textContent = 'Waiting...';
     });
-    
+
     peer.on('connection', (connection) => {
         conn = connection;
         setupConnection();
     });
-    
+
+    peer.on('call', async (incomingCall) => {
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        incomingCall.answer(localStream);
+        call = incomingCall;
+        call.on('stream', (stream) => {
+            remoteAudio.srcObject = stream;
+        });
+    });
+
     peer.on('error', (err) => {
-        alert('Connection error: ' + err.type);
+        alert('Error: ' + err.type);
         resetAll();
     });
 });
@@ -377,7 +528,7 @@ joinRoom.addEventListener('click', () => {
     showScreen(setupScreen);
     createStep.style.display = 'none';
     joinStep.style.display = 'block';
-    
+
     peer = new Peer({
         config: {
             iceServers: [
@@ -386,9 +537,9 @@ joinRoom.addEventListener('click', () => {
             ]
         }
     });
-    
+
     peer.on('error', (err) => {
-        alert('Connection error: ' + err.type);
+        alert('Error: ' + err.type);
         resetAll();
     });
 });
@@ -399,11 +550,19 @@ copyId.addEventListener('click', () => {
     setTimeout(() => copyId.textContent = 'Copy ID', 2000);
 });
 
-connectBtn.addEventListener('click', () => {
+connectBtn.addEventListener('click', async () => {
     const peerId = peerIdInput.value.trim();
-    if (peerId.length !== 6) return alert('Enter 6-digit ID');
-    
+    if (peerId.length!== 6) return alert('Enter 6-digit ID');
+
     conn = peer.connect(peerId);
+
+    // Start voice call
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    call = peer.call(peerId, localStream);
+    call.on('stream', (stream) => {
+        remoteAudio.srcObject = stream;
+    });
+
     setupConnection();
 });
 
@@ -411,27 +570,36 @@ function setupConnection() {
     conn.on('open', () => {
         statusDot.classList.add('online');
         statusText.textContent = 'Connected';
-        showScreen(chatScreen);
+        showScreen(roomScreen);
+        resizeCanvas();
     });
-    
+
     conn.on('data', (data) => {
-        addMessage(data, 'peer');
+        if (typeof data === 'string') {
+            addMessage(data, 'peer');
+        } else if (data.type === 'draw') {
+            ctx.strokeStyle = data.color;
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(data.x1, data.y1);
+            ctx.lineTo(data.x2, data.y2);
+            ctx.stroke();
+        } else if (data.type === 'clear') {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
     });
-    
+
     conn.on('close', () => {
         alert('Friend disconnected');
         resetAll();
     });
-    
-    conn.on('error', (err) => {
+
+    conn.on('error', () => {
         alert('Connection failed');
         resetAll();
     });
 }
-
-backBtn.addEventListener('click', () => {
-    resetAll();
-});
 
 sendBtn.addEventListener('click', sendMsg);
 msgInput.addEventListener('keypress', (e) => {
@@ -440,8 +608,8 @@ msgInput.addEventListener('keypress', (e) => {
 
 function sendMsg() {
     const text = msgInput.value.trim();
-    if (!text || !conn || !conn.open) return;
-    
+    if (!text ||!conn ||!conn.open) return;
+
     conn.send(text);
     addMessage(text, 'me');
     msgInput.value = '';
@@ -455,15 +623,31 @@ function addMessage(text, type) {
     messages.scrollTop = messages.scrollHeight;
 }
 
+micBtn.addEventListener('click', () => {
+    if (!localStream) return;
+    const enabled = localStream.getAudioTracks()[0].enabled;
+    localStream.getAudioTracks()[0].enabled =!enabled;
+    micBtn.textContent = enabled? '🔇 Unmute' : '🎤 Mute';
+    micBtn.classList.toggle('active',!enabled);
+});
+
+leaveBtn.addEventListener('click', () => {
+    resetAll();
+});
+
 function resetAll() {
     if (peer) peer.destroy();
+    if (localStream) localStream.getTracks().forEach(t => t.stop());
     peer = null;
     conn = null;
+    call = null;
+    localStream = null;
     statusDot.classList.remove('online');
     statusText.textContent = 'Offline';
     messages.innerHTML = '';
     peerIdInput.value = '';
     myId.textContent = '------';
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     showScreen(homeScreen);
 }
 </script>
