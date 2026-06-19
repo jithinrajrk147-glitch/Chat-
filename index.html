@@ -1,1242 +1,163 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Spaces</title>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --bg: #f8fafc;
-            --surface: #ffffff;
-            --surface-2: #f1f5f9;
-            --primary: #10b981;
-            --text: #0f172a;
-            --text-2: #475569;
-            --text-3: #94a3b8;
-            --border: #e2e8f0;
-            --danger: #ef4444;
-            --radius: 12px;
-            --shadow: 0 4px 12px -2px rgb(0 0 0 / 0.08), 0 2px 6px -1px rgb(0 0 0 / 0.04);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        html, body {
-            height: 100%;
-            overflow: hidden;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            font-size: 14px;
-        }
-
-        .app {
-            height: 100vh;
-            height: 100dvh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .screen {
-            flex: 1;
-            display: none;
-            overflow: hidden;
-        }
-
-        .screen.active {
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Dash Layout */
-        .header {
-            padding: 12px 16px;
-            padding-top: calc(12px + env(safe-area-inset-top));
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-shrink: 0;
-        }
-
-        .title {
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-        }
-
-        .btn {
-            padding: 8px 14px;
-            background: var(--primary);
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: transform 0.1s;
-        }
-
-        .btn:active { transform: scale(0.96); }
-
-        .content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px;
-        }
-
-        .label {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-3);
-            text-transform: uppercase;
-            letter-spacing: .05em;
-            margin-bottom: 12px;
-        }
-
-        .grid {
-            display: grid;
-            gap: 12px;
-        }
-
-        .card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 14px;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-        }
-
-        .card:active { transform: scale(0.98); }
-
-        .card-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-        }
-
-        .card-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .card-title {
-            font-size: 14px;
-            font-weight: 600;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .card-meta {
-            font-size: 11px;
-            color: var(--text-2);
-            margin-top: 2px;
-        }
-
-        .card-actions {
-            display: flex;
-            gap: 6px;
-        }
-
-        .icon-sm {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            background: var(--surface-2);
-            border: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: var(--text-2);
-            transition: all 0.2s;
-        }
-
-        .icon-sm:hover {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: #fff;
-        }
-
-        .icon-sm.delete:hover {
-            background: var(--danger);
-            border-color: var(--danger);
-        }
-
-        .empty {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-3);
-            font-size: 13px;
-        }
-
-        /* Modals & Sheets */
-        .modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.3);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            padding: 16px;
-        }
-
-        .modal.active { display: flex; }
-
-        .sheet {
-            background: var(--surface);
-            border-radius: 20px;
-            width: 100%;
-            max-width: 380px;
-            max-height: 85vh;
-            overflow-y: auto;
-            box-shadow: var(--shadow);
-            animation: sheetUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        @keyframes sheetUp {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .sheet-h { padding: 20px 20px 12px; }
-        .sheet-t { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
-        .sheet-d { font-size: 13px; color: var(--text-2); }
-        .sheet-b { padding: 0 20px 20px; }
-        .field { margin-bottom: 16px; }
-        
-        .lbl {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-2);
-            margin-bottom: 6px;
-        }
-
-        .inp {
-            width: 100%;
-            padding: 10px 12px;
-            background: var(--surface-2);
-            border: 1.5px solid var(--border);
-            border-radius: 10px;
-            font-size: 14px;
-            outline: 0;
-            font-family: inherit;
-        }
-
-        .inp:focus { border-color: var(--primary); background: var(--surface); }
-        
-        .sheet-f {
-            display: flex;
-            gap: 10px;
-            padding: 12px 20px;
-            border-top: 1px solid var(--border);
-        }
-
-        .btn-2 {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .btn-2.sec { background: var(--surface-2); border: 1.5px solid var(--border); color: var(--text); }
-        .btn-2.pri { background: var(--primary); color: #fff; }
-
-        /* Workspace Room Header */
-        .room-h {
-            padding: 8px 12px;
-            padding-top: calc(8px + env(safe-area-inset-top));
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-shrink: 0;
-        }
-
-        .icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            background: var(--surface-2);
-            border: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: var(--text);
-            flex-shrink: 0;
-        }
-
-        .icon:active { transform: scale(0.92); }
-        .icon.on { background: var(--primary); border-color: var(--primary); color: #fff; }
-        .room-info { flex: 1; min-width: 0; }
-        .room-n { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        
-        .room-s {
-            font-size: 11px;
-            color: var(--text-3);
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            margin-top: 1px;
-        }
-
-        .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: .3 } }
-        .room-act { display: flex; gap: 6px; }
-
-        /* Workspace Core Layout */
-        .wrap {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            min-height: 0;
-        }
-
-        .board {
-            flex: 1;
-            min-height: 20%;
-            background: #ffffff;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        .tools {
-            padding: 6px 10px;
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            gap: 6px;
-            align-items: center;
-            overflow-x: auto;
-            flex-shrink: 0;
-            scrollbar-width: none;
-            z-index: 20;
-        }
-        .tools::-webkit-scrollbar { display: none; }
-
-        .tool-btn {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            border: 1.5px solid var(--border);
-            cursor: pointer;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--surface-2);
-            color: var(--text-2);
-        }
-
-        .tool-btn.active { border-color: var(--primary); background: var(--primary); color: #fff; }
-
-        .color {
-            width: 26px;
-            height: 26px;
-            border-radius: 6px;
-            border: 2px solid var(--border);
-            cursor: pointer;
-            flex-shrink: 0;
-            transition: transform 0.1s;
-        }
-        .color.active { border-color: var(--text); transform: scale(1.1); }
-
-        .div { width: 1px; height: 20px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
-        
-        /* Viewport Frame Container for Non-Destructive Resizing */
-        .canvas-container {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-            background: #ffffff;
-        }
-
-        #canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 3000px;
-            height: 3000px;
-            cursor: crosshair;
-            touch-action: none;
-            display: block;
-            background: #fff;
-        }
-
-        /* Interactive Dynamic Customization Bubble */
-        .config-bubble {
-            position: absolute;
-            left: 12px;
-            bottom: 12px;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 12px;
-            box-shadow: var(--shadow);
-            z-index: 100;
-            display: none;
-            width: 200px;
-            animation: bubblePop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.1);
-        }
-        .config-bubble.show { display: block; }
-        @keyframes bubblePop {
-            from { transform: scale(0.9) translateY(5px); opacity: 0; }
-            to { transform: scale(1) translateY(0); opacity: 1; }
-        }
-        
-        .bubble-row { display: flex; flex-direction: column; gap: 8px; }
-        .bubble-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-2); letter-spacing: 0.02em; }
-        
-        .range-slider {
-            width: 100%;
-            -webkit-appearance: none;
-            appearance: none;
-            height: 6px;
-            border-radius: 3px;
-            background: var(--surface-2);
-            outline: none;
-        }
-        .range-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: var(--primary);
-            cursor: pointer;
-        }
-
-        .picker-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
-        .custom-picker {
-            -webkit-appearance: none;
-            border: none;
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
-            cursor: pointer;
-            background: none;
-        }
-        .custom-picker::-webkit-color-swatch-wrapper { padding: 0; }
-        .custom-picker::-webkit-color-swatch { border: 1px solid var(--border); border-radius: 6px; }
-
-        /* Draggable Dynamic Divider Row */
-        .split {
-            height: 10px;
-            background: var(--surface-2);
-            border-top: 1px solid var(--border);
-            border-bottom: 1px solid var(--border);
-            cursor: ns-resize;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            touch-action: none;
-            z-index: 30;
-        }
-        .split:active { background: var(--border); }
-        .split::before { content: ''; width: 36px; height: 4px; background: var(--text-3); border-radius: 2px; }
-
-        /* Chat Layout */
-        .chat {
-            background: var(--surface);
-            display: flex;
-            flex-direction: column;
-            min-height: 140px;
-            height: 35%;
-            max-height: 70%;
-            z-index: 25;
-        }
-
-        .msgs {
-            flex: 1;
-            padding: 12px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            min-height: 0;
-        }
-
-        .msg {
-            max-width: 80%;
-            padding: 8px 12px;
-            border-radius: 12px;
-            font-size: 13px;
-            line-height: 1.4;
-            word-wrap: break-word;
-        }
-        .msg.me { align-self: flex-end; background: var(--primary); color: #fff; border-bottom-right-radius: 3px; }
-        .msg.peer { align-self: flex-start; background: var(--surface-2); border: 1px solid var(--border); border-bottom-left-radius: 3px; }
-        .msg.sys { align-self: center; background: var(--surface-2); color: var(--text-2); font-size: 11px; padding: 4px 10px; border-radius: 10px; }
-
-        .input-row {
-            padding: 8px 12px;
-            background: var(--surface);
-            border-top: 1px solid var(--border);
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-shrink: 0;
-        }
-
-        .emoji-btn {
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
-            background: var(--surface-2);
-            border: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            flex-shrink: 0;
-            font-size: 18px;
-        }
-        .emoji-btn.on { background: var(--surface-2); border-color: var(--primary); }
-
-        .msg-inp {
-            flex: 1;
-            padding: 10px 14px;
-            background: var(--surface-2);
-            border: 1.5px solid var(--border);
-            border-radius: 10px;
-            font-size: 14px;
-            outline: 0;
-            font-family: inherit;
-        }
-        .msg-inp:focus { border-color: var(--primary); background: var(--surface); }
-
-        .send {
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
-            background: var(--primary);
-            border: none;
-            color: #fff;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        .send:active { transform: scale(0.92); }
-
-        /* Keyboard layout style for phone emoji panel */
-        .emoji-panel {
-            background: var(--surface-2);
-            border-top: 1px solid var(--border);
-            display: none;
-            height: 240px;
-            overflow-y: auto;
-            flex-shrink: 0;
-            padding: 12px;
-            padding-bottom: calc(12px + env(safe-area-inset-bottom));
-        }
-        .emoji-panel.show { display: block; }
-        
-        .emoji-grid {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            gap: 6px;
-        }
-
-        .emoji {
-            font-size: 24px;
-            padding: 6px 4px;
-            text-align: center;
-            cursor: pointer;
-            border-radius: 8px;
-            display: inline-block;
-            user-select: none;
-        }
-        .emoji:active { background: var(--border); }
-
-        /* QR Link Setup */
-        .qr { background: #fff; border-radius: 12px; padding: 12px; margin: 12px 0; display: flex; justify-content: center; border: 1px solid var(--border); }
-        .link { background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 10px; padding: 10px; display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
-        .link-t { flex: 1; font-size: 12px; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); }
-        .copy { padding: 6px 12px; background: var(--primary); color: #fff; border: none; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WebRTC Chat - Really Free</title>
+<style>
+body { font-family:system-ui; background:#0d1117; color:#e6edf3; margin:0; padding:15px; }
+.container { max-width:500px; margin:auto; }
+h3 { margin:0 0 15px 0; }
+textarea, input, button { width:100%; padding:12px; margin:6px 0; background:#161b22; border:1px solid #30363d; color:#e6edf3; border-radius:8px; box-sizing:border-box; font-size:16px; }
+button { background:#238636; font-weight:bold; cursor:pointer; }
+button:disabled { background:#30363d; cursor:not-allowed; }
+#messages { height:50vh; overflow-y:auto; border:1px solid #30363d; padding:10px; margin:10px 0; border-radius:8px; background:#0d1117; }
+.msg { margin:8px 0; padding:10px; border-radius:8px; max-width:75%; word-wrap:break-word; }
+.me { background:#1f6feb; margin-left:auto; }
+.them { background:#21262d; }
+.system { background:#161b22; text-align:center; font-size:14px; opacity:0.7; max-width:100%; }
+.hide { display:none; }
+.label { font-size:14px; margin:10px 0 4px 0; opacity:0.8; }
+#status { color:#7ee787; margin:10px 0; }
+</style>
 </head>
 <body>
-
-<div class="app">
-    <div class="screen active" id="dashScreen">
-        <div class="header">
-            <h1 class="title">Spaces</h1>
-            <button class="btn" id="createBtn">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>create space
-            </button>
-        </div>
-        <div class="content">
-            <div class="label">Recent Workspace Environments</div>
-            <div class="grid" id="spaceGrid"></div>
-        </div>
-    </div>
-
-    <div class="screen" id="roomScreen">
-        <div class="room-h">
-            <button class="icon" id="backBtn">
-                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-            </button>
-            <div class="room-info">
-                <div class="room-n" id="roomName">Space</div>
-                <div class="room-s"><div class="dot"></div><span id="peerStatus">Connecting...</span></div>
-            </div>
+<div class="container">
+    <h3>WebRTC Chat - ₹0, Unlimited</h3>
+    
+    <div id="setup">
+        <button id="createBtn" onclick="create()">1. Create New Room</button>
+        
+        <div class="label">OR Join Friend's Room:</div>
+        <textarea id="offerIn" rows="3" placeholder="Paste friend's Offer Code here"></textarea>
+        <button onclick="join()">2. Join Room</button>
+        
+        <div id="step2" class="hide">
+            <div class="label">Send this Offer Code to friend:</div>
+            <textarea id="offerOut" rows="3" readonly></textarea>
+            <button onclick="copy('offerOut')">Copy Offer Code</button>
             
-            <div class="room-act">
-                <button class="icon" id="micBtn" title="Mic">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
-                </button>
-                <button class="icon" id="shareBtn" title="Share Link">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12 Kettlebellc0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
-                </button>
-            </div>
-        </div>
-
-        <div class="wrap">
-            <div class="board">
-                <div class="tools">
-                    <div class="tool-btn active" id="penBtn" title="Configure Pen">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                    </div>
-                    <div class="tool-btn" id="eraserBtn" title="Configure Eraser">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 0 00-1-1h-4a1 0 00-1 1v3M4 7h16"/></svg>
-                    </div>
-                    <div class="div"></div>
-                    <div class="color active" data-color="#000000" style="background:#000"></div>
-                    <div class="color" data-color="#ef4444" style="background:#ef4444"></div>
-                    <div class="color" data-color="#3b82f6" style="background:#3b82f6"></div>
-                    <div class="color" data-color="#10b981" style="background:#10b981"></div>
-                    <div class="color" data-color="#f59e0b" style="background:#f59e0b"></div>
-                    <div class="color" data-color="#8b5cf6" style="background:#8b5cf6"></div>
-                    <div class="div"></div>
-                    <button class="tool-btn" id="clearBtn" title="Clear Canvas Layer">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                    </button>
-                </div>
-                
-                <div class="config-bubble" id="configBubble">
-                    <div class="bubble-row">
-                        <div id="brushSizeContainer">
-                            <div class="bubble-title" id="bubbleSizeTitle">Pen Thickness: 3px</div>
-                            <input type="range" min="1" max="40" value="3" class="range-slider" id="brushSizeSlider">
-                        </div>
-                        <div class="div" style="width: 100%; height: 1px; margin: 4px 0;"></div>
-                        <div>
-                            <div class="bubble-title">Custom RGB Color</div>
-                            <div class="picker-row">
-                                <input type="color" id="bubbleColorPicker" value="#000000" class="custom-picker">
-                                <span style="font-size:11px; font-family:monospace; color:var(--text-2);" id="hexLabel">#000000</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="canvas-container">
-                    <canvas id="canvas" width="3000" height="3000"></canvas>
-                </div>
-            </div>
-
-            <div class="split" id="split"></div>
-
-            <div class="chat" id="chatBox">
-                <div class="msgs" id="msgs"></div>
-                <div class="input-row">
-                    <button class="emoji-btn" id="emojiBtn">😊</button>
-                    <input type="text" class="msg-inp" id="msgInput" placeholder="Message...">
-                    <button class="send" id="sendBtn">
-                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-                    </button>
-                </div>
-                <div class="emoji-panel" id="emojiPanel">
-                    <div class="emoji-grid" id="emojiGrid">😀 😃 😄 😁 😆 😅 😂 🤣 🥲 🥹 😊 😇 🙂 🙃 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😝 😜 🤪 🤨 🧐 🤓 😎 🥸 🤩 🥳 😏 😒 😞 😔 😟 😕 🙁 ☹️ 😣 😖 😫 😩 🥺 😢 😭 😤 😠 😡 🤬 🤯 😳 🥵 🥶 😱 😨 😰 😥 😓 🤗 🤔 🤭 🤫 🤥 😶 😐 😑 😬 🙄 😯 😦 😧 😮 😲 🥱 😴 🤤 😪 😵 😵‍💫 🤐 🥴 🤢 🤮 🤧 😷 🤒 🤕 🤑 🤠 😈 👿 👹 👺 🤡 💩 👻 💀 ☠️ 👽 👾 🤖 🎃 😺 😸 😹 😻 😼 😽 🙀 😿 😾 ❤️ 🧡 💛 💚 💙 💜 🤎 🖤 🤍 💔 ❣️ 💕 💞 💓 💗 💖 💘 💝 💟 👍 👎 👌 ✌️ 🤞 🤟 🤘 🤙 👈 👉 👆 👇 ☝️ ✋ 🤚 🖐 🖖 👏 🙌 👐 🤲 🤝 🙏 ✨ 🎉 🎊 🎈 🎁 🔥 💯 ⭐ 🌟 ⚡</div>
-                </div>
-            </div>
+            <div class="label">Paste friend's Answer Code here:</div>
+            <textarea id="answerIn" rows="3" placeholder="Paste Answer Code here"></textarea>
+            <button onclick="connect()">3. Connect</button>
         </div>
     </div>
-</div>
 
-<div class="modal" id="createModal">
-    <div class="sheet">
-        <div class="sheet-h">
-            <h3 class="sheet-t" id="modalTitle">New Space</h3>
-            <p class="sheet-d">Create a 1-to-1 workspace</p>
-        </div>
-        <div class="sheet-b">
-            <div class="field">
-                <label class="lbl">Space Name</label>
-                <input type="text" class="inp" id="spaceInput" placeholder="My Space" maxlength="30">
-            </div>
-        </div>
-        <div class="sheet-f">
-            <button class="btn-2 sec" id="cancelBtn">Cancel</button>
-            <button class="btn-2 pri" id="confirmBtn">Create</button>
-        </div>
+    <div id="chat" class="hide">
+        <div id="messages"></div>
+        <input id="msgInput" placeholder="Type message..." onkeydown="if(event.key==='Enter')send()">
+        <button onclick="send()">Send Message</button>
     </div>
-</div>
-
-<div class="modal" id="shareModal">
-    <div class="sheet">
-        <div class="sheet-h">
-            <h3 class="sheet-t">Invite Friend</h3>
-            <p class="sheet-d">Share this peer configuration link</p>
-        </div>
-        <div class="sheet-b">
-            <div class="qr" id="qrcode"></div>
-            <div class="link">
-                <div class="link-t" id="spaceLink">Loading connection link...</div>
-                <button class="copy" id="copyBtn">Copy</button>
-            </div>
-        </div>
-        <div class="sheet-f">
-            <button class="btn-2 sec" id="closeShareBtn">Done</button>
-        </div>
-    </div>
+    
+    <div id="status"></div>
 </div>
 
 <script>
-    // System Parameters Tracking Logic
-    let peer, conn, curSpace, spaces = JSON.parse(localStorage.getItem('spaces') || '[]'), editId = null;
-    let isDraw = false, tool = 'pen', col = '#000000', lx = 0, ly = 0;
-    let penSize = 3, eraserSize = 20; 
-    let stream, micOn = false, call, isHost = false, isDragging = false;
+let pc, channel, isHost = false;
+const status = document.getElementById('status');
 
-    // View Components Layout Fetch Handles
-    const dashScreen = document.getElementById('dashScreen'), roomScreen = document.getElementById('roomScreen'),
-          createBtn = document.getElementById('createBtn'), createModal = document.getElementById('createModal'),
-          cancelBtn = document.getElementById('cancelBtn'), confirmBtn = document.getElementById('confirmBtn'),
-          spaceInput = document.getElementById('spaceInput'), modalTitle = document.getElementById('modalTitle'),
-          spaceGrid = document.getElementById('spaceGrid'), backBtn = document.getElementById('backBtn'),
-          roomName = document.getElementById('roomName'), peerStatus = document.getElementById('peerStatus'),
-          micBtn = document.getElementById('micBtn'), shareBtn = document.getElementById('shareBtn'),
-          shareModal = document.getElementById('shareModal'), closeShareBtn = document.getElementById('closeShareBtn'),
-          copyBtn = document.getElementById('copyBtn'), spaceLink = document.getElementById('spaceLink'),
-          msgs = document.getElementById('msgs'), msgInput = document.getElementById('msgInput'),
-          sendBtn = document.getElementById('sendBtn'), canvas = document.getElementById('canvas'),
-          ctx = canvas.getContext('2d'), clearBtn = document.getElementById('clearBtn'),
-          chatBox = document.getElementById('chatBox'), split = document.getElementById('split'),
-          penBtn = document.getElementById('penBtn'), eraserBtn = document.getElementById('eraserBtn'),
-          emojiBtn = document.getElementById('emojiBtn'), emojiPanel = document.getElementById('emojiPanel'),
-          emojiGrid = document.getElementById('emojiGrid'), configBubble = document.getElementById('configBubble'),
-          brushSizeSlider = document.getElementById('brushSizeSlider'), bubbleSizeTitle = document.getElementById('bubbleSizeTitle'),
-          bubbleColorPicker = document.getElementById('bubbleColorPicker'), hexLabel = document.getElementById('hexLabel');
+function log(t) { 
+    status.textContent = t;
+    console.log(t);
+}
 
-    // UI Utilities View Mechanics Engine
-    function show(e) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        e.classList.add('active');
-    }
-
-    // Process & Structure Raw Emoji Block Stream array into interactive selectable nodes
-    function setupEmojiLayout() {
-        const items = emojiGrid.textContent.trim().split(/\s+/);
-        emojiGrid.innerHTML = items.map(emo => `<span class="emoji">${emo}</span>`).join('');
-        
-        document.querySelectorAll('.emoji').forEach(el => {
-            el.addEventListener('click', () => {
-                msgInput.value += el.textContent;
-                msgInput.focus();
-            });
-        });
-    }
-
-    function render() {
-        if (spaces.length === 0) {
-            spaceGrid.innerHTML = `<div class="empty">No room deployed yet. Create one to begin.</div>`;
-        } else {
-            spaceGrid.innerHTML = spaces.map(e => `
-                <div class="card" data-id="${e.id}">
-                    <div class="card-row">
-                        <div class="card-info">
-                            <div class="card-title">${e.name}</div>
-                            <div class="card-meta">${new Date(e.created).toLocaleDateString()}</div>
-                        </div>
-                        <div class="card-actions">
-                            <button class="icon-sm edit" data-id="${e.id}">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                            </button>
-                            <button class="icon-sm delete" data-id="${e.id}">
-                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 0 00-1-1h-4a1 0 00-1 1v3M4 7h16"/></svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-
-            document.querySelectorAll('.card').forEach(c => {
-                c.addEventListener('click', t => {
-                    if (!t.target.closest('.icon-sm')) {
-                        enter(spaces.find(x => x.id === c.dataset.id), true);
-                    }
-                });
-            });
-
-            document.querySelectorAll('.icon-sm.edit').forEach(el => {
-                el.addEventListener('click', t => {
-                    t.stopPropagation();
-                    const s = spaces.find(x => x.id === el.dataset.id);
-                    editId = s.id;
-                    spaceInput.value = s.name;
-                    modalTitle.textContent = 'Edit Space';
-                    confirmBtn.textContent = 'Save';
-                    createModal.classList.add('active');
-                });
-            });
-
-            document.querySelectorAll('.icon-sm.delete').forEach(el => {
-                el.addEventListener('click', t => {
-                    t.stopPropagation();
-                    if (confirm('Delete Space environment?')) {
-                        spaces = spaces.filter(x => x.id !== el.dataset.id);
-                        localStorage.setItem('spaces', JSON.stringify(spaces));
-                        render();
-                    }
-                });
-            });
-        }
-    }
-
-    function msg(text, type) {
-        const m = document.createElement('div');
-        m.className = `msg ${type}`;
-        m.textContent = text;
-        msgs.appendChild(m);
-        msgs.scrollTop = msgs.scrollHeight;
-    }
-
-    function send(data) {
-        if (conn && conn.open) conn.send(data);
-    }
-
-    async function genId() {
-        const buf = new Uint8Array(16);
-        crypto.getRandomValues(buf);
-        const hash = await crypto.subtle.digest('SHA-256', buf);
-        const hex = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-        const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-        let val = BigInt('0x' + hex), out = '';
-        while (val > 0) {
-            out = chars[Number(val % 58n)] + out;
-            val /= 58n;
-        }
-        return out.slice(0, 12);
-    }
-
-    const cfg = { config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } };
-
-    async function enter(space, hostMode = false) {
-        curSpace = space;
-        isHost = hostMode;
-        roomName.textContent = space.name;
-        show(roomScreen);
-
-        const targetPeerId = hostMode ? space.id : undefined;
-        peer = new Peer(targetPeerId, cfg);
-
-        peer.on('open', () => {
-            if (hostMode) {
-                peerStatus.textContent = 'Waiting...';
-                msg('Workspace open, waiting for peer alignment...', 'sys');
-            } else {
-                peerStatus.textContent = 'Connecting...';
-                connect(space.id);
-            }
-            spaceLink.textContent = space.url;
-            document.getElementById('qrcode').innerHTML = '';
-            new QRCode(document.getElementById('qrcode'), { text: space.url, width: 180, height: 180, colorDark: '#0f172a', colorLight: '#ffffff' });
-        });
-
-        peer.on('connection', e => {
-            conn = e;
-            setupPeerCallbacks();
-            peerStatus.textContent = 'Connected';
-            msg('Peer aligned & joined workspace.', 'sys');
-        });
-
-        peer.on('call', async c => {
-            try {
-                if (!stream) stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                c.answer(stream);
-                call = c;
-                call.on('stream', remoteStream => {
-                    const audio = new Audio();
-                    audio.srcObject = remoteStream;
-                    audio.play();
-                });
-                micOn = true;
-                micBtn.classList.add('on');
-            } catch (err) {}
-        });
-
-        peer.on('error', err => {
-            if (err.type === 'unavailable-id') {
-                setTimeout(() => enter(space, false), 500);
-            } else if (err.type === 'peer-unavailable') {
-                msg('Remote Host offline', 'sys');
-                peerStatus.textContent = 'Offline';
-            } else {
-                msg('Network alignment failure', 'sys');
-            }
-        });
-    }
-
-    function connect(id) {
-        conn = peer.connect(id);
-        setupPeerCallbacks();
-    }
-
-    function setupPeerCallbacks() {
-        conn.on('open', () => {
-            peerStatus.textContent = 'Connected';
-            msg('Workspace fully synced!', 'sys');
-        });
-
-        conn.on('data', d => {
-            if (typeof d === 'string') {
-                msg(d, 'peer');
-            } else if (d.type === 'draw') {
-                ctx.globalCompositeOperation = d.tool === 'eraser' ? 'destination-out' : 'source-over';
-                ctx.strokeStyle = d.color;
-                ctx.lineWidth = d.size;
-                ctx.lineCap = 'round';
-                ctx.beginPath();
-                ctx.moveTo(d.x1, d.y1);
-                ctx.lineTo(d.x2, d.y2);
-                ctx.stroke();
-                ctx.globalCompositeOperation = 'source-over';
-            } else if (d.type === 'clear') {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-            }
-        });
-
-        conn.on('close', () => {
-            peerStatus.textContent = 'Disconnected';
-            msg('Peer detached from workspace.', 'sys');
-            conn = null;
-        });
-    }
-
-    // Customization Bubble Logic Setup
-    function openConfigBubble(targetTool) {
-        configBubble.classList.add('show');
-        if (targetTool === 'pen') {
-            brushSizeSlider.min = 1;
-            brushSizeSlider.max = 40;
-            brushSizeSlider.value = penSize;
-            bubbleSizeTitle.textContent = `Pen Thickness: ${penSize}px`;
-        } else {
-            brushSizeSlider.min = 5;
-            brushSizeSlider.max = 100;
-            brushSizeSlider.value = eraserSize;
-            bubbleSizeTitle.textContent = `Eraser Track: ${eraserSize}px`;
-        }
-        bubbleColorPicker.value = col;
-        hexLabel.textContent = col.toUpperCase();
-    }
-
-    // UI Event Hooks Setup
-    setupEmojiLayout();
-    render();
-
-    createBtn.addEventListener('click', () => {
-        editId = null;
-        spaceInput.value = '';
-        modalTitle.textContent = 'New Space';
-        confirmBtn.textContent = 'Create';
-        createModal.classList.add('active');
+async function create() {
+    isHost = true;
+    document.getElementById('createBtn').disabled = true;
+    log('Creating room...');
+    
+    pc = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
     });
+    
+    channel = pc.createDataChannel('chat');
+    setupChannel();
+    
+    pc.onicecandidate = e => {
+        if (e.candidate) return;
+        document.getElementById('offerOut').value = btoa(JSON.stringify(pc.localDescription));
+        document.getElementById('step2').classList.remove('hide');
+        log('Send Offer Code to friend via WhatsApp');
+    };
+    
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+}
 
-    cancelBtn.addEventListener('click', () => {
-        createModal.classList.remove('active');
-        editId = null;
+async function join() {
+    const code = document.getElementById('offerIn').value.trim();
+    if(!code) return alert('Paste Offer Code first');
+    log('Joining room...');
+    
+    pc = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
     });
+    
+    pc.ondatachannel = e => {
+        channel = e.channel;
+        setupChannel();
+    };
+    
+    pc.onicecandidate = e => {
+        if (e.candidate) return;
+        const answerCode = btoa(JSON.stringify(pc.localDescription));
+        navigator.clipboard.writeText(answerCode);
+        alert('Answer Code copied! Send it back to friend');
+        log('Answer copied - send to friend');
+    };
+    
+    await pc.setRemoteDescription(JSON.parse(atob(code)));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+}
 
-    confirmBtn.addEventListener('click', async () => {
-        const title = spaceInput.value.trim() || 'Untitled Space';
-        confirmBtn.disabled = true;
-        if (editId) {
-            const idx = spaces.findIndex(x => x.id === editId);
-            spaces[idx].name = title;
-            localStorage.setItem('spaces', JSON.stringify(spaces));
-            render();
-            createModal.classList.remove('active');
-            confirmBtn.disabled = false;
-            editId = null;
-        } else {
-            const roomUid = await genId();
-            const spaceObj = {
-                id: roomUid,
-                name: title,
-                created: Date.now(),
-                url: `${window.location.origin}${window.location.pathname}?space=${roomUid}`
-            };
-            spaces.unshift(spaceObj);
-            localStorage.setItem('spaces', JSON.stringify(spaces));
-            render();
-            createModal.classList.remove('active');
-            confirmBtn.disabled = false;
-            enter(spaceObj, true);
-        }
-    });
+async function connect() {
+    const code = document.getElementById('answerIn').value.trim();
+    if(!code) return alert('Paste Answer Code first');
+    await pc.setRemoteDescription(JSON.parse(atob(code)));
+    log('Connecting...');
+}
 
-    backBtn.addEventListener('click', () => {
-        if (peer) peer.destroy();
-        if (stream) stream.getTracks().forEach(t => t.stop());
-        peer = null; conn = null; stream = null; micOn = false; isHost = false;
-        micBtn.classList.remove('on');
-        configBubble.classList.remove('show');
-        emojiPanel.classList.remove('show');
-        emojiBtn.classList.remove('on');
-        msgs.innerHTML = '';
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        show(dashScreen);
-    });
+function setupChannel() {
+    channel.onopen = () => {
+        document.getElementById('setup').classList.add('hide');
+        document.getElementById('chat').classList.remove('hide');
+        log('Connected! Unlimited free messages');
+        addMsg('Connected! Messages are P2P encrypted & free', 'system');
+    };
+    
+    channel.onmessage = e => addMsg(e.data, 'them');
+    channel.onclose = () => {
+        addMsg('Friend disconnected', 'system');
+        log('Disconnected');
+    };
+}
 
-    // Drawing Palette Configuration Handles
-    document.querySelectorAll('.color').forEach(el => {
-        el.addEventListener('click', () => {
-            document.querySelectorAll('.color').forEach(c => c.classList.remove('active'));
-            el.classList.add('active');
-            col = el.dataset.color;
-            tool = 'pen';
-            penBtn.classList.add('active');
-            eraserBtn.classList.remove('active');
-            openConfigBubble('pen');
-        });
-    });
+function send() {
+    const input = document.getElementById('msgInput');
+    const text = input.value.trim();
+    if(!text || !channel || channel.readyState !== 'open') return;
+    
+    channel.send(text);
+    addMsg(text, 'me');
+    input.value = '';
+}
 
-    penBtn.addEventListener('click', () => {
-        tool = 'pen';
-        penBtn.classList.add('active');
-        eraserBtn.classList.remove('active');
-        openConfigBubble('pen');
-    });
+function addMsg(text, cls) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + cls;
+    div.textContent = text;
+    const m = document.getElementById('messages');
+    m.appendChild(div);
+    m.scrollTop = m.scrollHeight;
+}
 
-    eraserBtn.addEventListener('click', () => {
-        tool = 'eraser';
-        eraserBtn.classList.add('active');
-        penBtn.classList.remove('active');
-        openConfigBubble('eraser');
-    });
-
-    // Config Bubble Inputs
-    brushSizeSlider.addEventListener('input', (e) => {
-        const val = e.target.value;
-        if (tool === 'pen') {
-            penSize = val;
-            bubbleSizeTitle.textContent = `Pen Thickness: ${penSize}px`;
-        } else {
-            eraserSize = val;
-            bubbleSizeTitle.textContent = `Eraser Track: ${eraserSize}px`;
-        }
-    });
-
-    bubbleColorPicker.addEventListener('input', (e) => {
-        col = e.target.value;
-        hexLabel.textContent = col.toUpperCase();
-        document.querySelectorAll('.color').forEach(c => c.classList.remove('active'));
-    });
-
-    // Canvas Draw System Controls (Reads coordinates relative to the backing grid layer boundary bounding rect)
-    function getPos(e) {
-        const rect = canvas.getBoundingClientRect();
-        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-        return { x: clientX - rect.left, y: clientY - rect.top };
-    }
-
-    function strokeDraw(x, y) {
-        const activeSize = tool === 'pen' ? penSize : eraserSize;
-        ctx.globalCompositeOperation = tool === 'eraser' ? 'destination-out' : 'source-over';
-        ctx.strokeStyle = col;
-        ctx.lineWidth = activeSize;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(lx, ly);
-        ctx.lineTo(x, y);
-        ctx.stroke();
-        send({ type: 'draw', x1: lx, y1: ly, x2: x, y2: y, color: col, tool: tool, size: activeSize });
-        ctx.globalCompositeOperation = 'source-over';
-    }
-
-    canvas.addEventListener('mousedown', e => {
-        isDraw = true; configBubble.classList.remove('show');
-        const p = getPos(e); lx = p.x; ly = p.y;
-    });
-    canvas.addEventListener('mousemove', e => {
-        if (!isDraw) return;
-        const p = getPos(e); strokeDraw(p.x, p.y); lx = p.x; ly = p.y;
-    });
-    window.addEventListener('mouseup', () => isDraw = false);
-
-    canvas.addEventListener('touchstart', e => {
-        isDraw = true; configBubble.classList.remove('show');
-        const p = getPos(e); lx = p.x; ly = p.y;
-    });
-    canvas.addEventListener('touchmove', e => {
-        if (!isDraw) return;
-        e.preventDefault();
-        const p = getPos(e); strokeDraw(p.x, p.y); lx = p.x; ly = p.y;
-    });
-    window.addEventListener('touchend', () => isDraw = false);
-
-    clearBtn.addEventListener('click', () => {
-        if (confirm("Clear layout canvas layer?")) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            send({ type: 'clear' });
-            configBubble.classList.remove('show');
-        }
-    });
-
-    // Core Messaging Logic Hooks
-    sendBtn.addEventListener('click', sendMsg);
-    msgInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendMsg(); });
-
-    function sendMsg() {
-        const text = msgInput.value.trim();
-        if (!text) return;
-        msg(text, 'me');
-        send(text);
-        msgInput.value = '';
-    }
-
-    // Audio Streams Controller Hook
-    micBtn.addEventListener('click', async () => {
-        try {
-            if (micOn) {
-                if (stream) stream.getTracks().forEach(t => t.stop());
-                stream = null; if (call) call.close(); call = null;
-                micOn = false; micBtn.classList.remove('on');
-            } else {
-                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                micOn = true; micBtn.classList.add('on');
-                if (conn && conn.open) {
-                    call = peer.call(conn.peer, stream);
-                    call.on('stream', s => {
-                        const audio = new Audio();
-                        audio.srcObject = s;
-                        audio.play();
-                    });
-                }
-            }
-        } catch (e) { alert('Microphone authorization denied'); }
-    });
-
-    // Sharing System Panel Hook
-    shareBtn.addEventListener('click', () => shareModal.classList.add('active'));
-    closeShareBtn.addEventListener('click', () => shareModal.classList.remove('active'));
-    copyBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(spaceLink.textContent);
-        copyBtn.textContent = 'Copied!';
-        setTimeout(() => copyBtn.textContent = 'Copy', 2000);
-    });
-
-    // Toggle Keyboard-Style Emoji Panel Hook
-    emojiBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        emojiPanel.classList.toggle('show');
-        emojiBtn.classList.toggle('on');
-        if (emojiPanel.classList.contains('show')) {
-            msgs.scrollTop = msgs.scrollHeight;
-        }
-    });
-
-    // Close on text inputs click
-    msgInput.addEventListener('focus', () => {
-        emojiPanel.classList.remove('show');
-        emojiBtn.classList.remove('on');
-    });
-
-    // Clear Floating Components on Outer Interface Taps
-    document.addEventListener('click', e => {
-        if (configBubble.classList.contains('show') && !configBubble.contains(e.target) && !e.target.closest('.tool-btn') && !e.target.closest('.color')) {
-            configBubble.classList.remove('show');
-        }
-    });
-
-    // Split View Dragging Logic Functionality (Non-Destructive view resizing)
-    function initDrag(e) {
-        isDragging = true;
-        document.body.style.userSelect = 'none';
-        document.body.style.webkitUserSelect = 'none';
-    }
-
-    function doDrag(e) {
-        if (!isDragging) return;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        const wrapRect = document.querySelector('.wrap').getBoundingClientRect();
-        const absoluteTop = clientY - wrapRect.top;
-        
-        let percent = (absoluteTop / wrapRect.height) * 100;
-        if (percent < 20) percent = 20;
-        if (percent > 75) percent = 75;
-
-        canvas.parentElement.parentElement.style.flex = `0 0 ${percent}%`;
-        chatBox.style.height = `${100 - percent}%`;
-    }
-
-    function endDrag() {
-        if (isDragging) {
-            isDragging = false;
-            document.body.style.userSelect = '';
-            document.body.style.webkitUserSelect = '';
-        }
-    }
-
-    split.addEventListener('mousedown', initDrag);
-    split.addEventListener('touchstart', initDrag, { passive: true });
-    document.addEventListener('mousemove', doDrag);
-    document.addEventListener('touchmove', doDrag, { passive: false });
-    document.addEventListener('mouseup', endDrag);
-    document.addEventListener('touchend', endDrag);
-
-    // Initial Direct URI Route Interceptor Entry Point
-    window.addEventListener('load', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlRoomId = urlParams.get('space');
-        if (urlRoomId) {
-            const sharedSpaceObj = {
-                id: urlRoomId,
-                name: 'Shared Space',
-                created: Date.now(),
-                url: window.location.href
-            };
-            enter(sharedSpaceObj, false);
-        }
-    });
+function copy(id) {
+    const el = document.getElementById(id);
+    el.select();
+    document.execCommand('copy');
+    log('Copied! Send to friend');
+}
 </script>
 </body>
 </html>
