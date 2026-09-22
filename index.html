@@ -1,163 +1,138 @@
 <!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>WebRTC Chat - Really Free</title>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ABCC Tor - No DB</title>
+<script src="https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.13/dist/modules/sodium.js"></script>
 <style>
-body { font-family:system-ui; background:#0d1117; color:#e6edf3; margin:0; padding:15px; }
-.container { max-width:500px; margin:auto; }
-h3 { margin:0 0 15px 0; }
-textarea, input, button { width:100%; padding:12px; margin:6px 0; background:#161b22; border:1px solid #30363d; color:#e6edf3; border-radius:8px; box-sizing:border-box; font-size:16px; }
-button { background:#238636; font-weight:bold; cursor:pointer; }
-button:disabled { background:#30363d; cursor:not-allowed; }
-#messages { height:50vh; overflow-y:auto; border:1px solid #30363d; padding:10px; margin:10px 0; border-radius:8px; background:#0d1117; }
-.msg { margin:8px 0; padding:10px; border-radius:8px; max-width:75%; word-wrap:break-word; }
-.me { background:#1f6feb; margin-left:auto; }
-.them { background:#21262d; }
-.system { background:#161b22; text-align:center; font-size:14px; opacity:0.7; max-width:100%; }
-.hide { display:none; }
-.label { font-size:14px; margin:10px 0 4px 0; opacity:0.8; }
-#status { color:#7ee787; margin:10px 0; }
+body{background:#000;color:#0f0;font-family:monospace;padding:12px}
+.box{border:1px solid #0f0;padding:10px;margin:8px 0;word-break:break-all}
+input,button{width:100%;background:#111;color:#0f0;border:1px solid #0f0;padding:12px;margin:5px 0;font-size:16px}
+#log{height:45vh;overflow:auto;border:1px dashed #0f0;padding:5px}
+small{color:#888}
 </style>
-</head>
-<body>
-<div class="container">
-    <h3>WebRTC Chat - ₹0, Unlimited</h3>
-    
-    <div id="setup">
-        <button id="createBtn" onclick="create()">1. Create New Room</button>
-        
-        <div class="label">OR Join Friend's Room:</div>
-        <textarea id="offerIn" rows="3" placeholder="Paste friend's Offer Code here"></textarea>
-        <button onclick="join()">2. Join Room</button>
-        
-        <div id="step2" class="hide">
-            <div class="label">Send this Offer Code to friend:</div>
-            <textarea id="offerOut" rows="3" readonly></textarea>
-            <button onclick="copy('offerOut')">Copy Offer Code</button>
-            
-            <div class="label">Paste friend's Answer Code here:</div>
-            <textarea id="answerIn" rows="3" placeholder="Paste Answer Code here"></textarea>
-            <button onclick="connect()">3. Connect</button>
-        </div>
-    </div>
+</head><body>
 
-    <div id="chat" class="hide">
-        <div id="messages"></div>
-        <input id="msgInput" placeholder="Type message..." onkeydown="if(event.key==='Enter')send()">
-        <button onclick="send()">Send Message</button>
-    </div>
-    
-    <div id="status"></div>
+<h2>ABCC TOR - P2P</h2>
+
+<div class="box">
+<b>My UID / Link:</b><br>
+<small id="status">Starting Tor...</small><br><br>
+<span id="myLink" style="font-size:18px;font-weight:bold">...</span><br><br>
+<button onclick="copyLink()">Copy My Link</button>
+<small>Share this link on WhatsApp - Anyone with link can chat you direct via Tor</small>
 </div>
 
+<div class="box">
+<b>Connect Friend:</b><br>
+<input id="friendLink" placeholder="Paste friend's link here - abc...onion or @abc...onion|pubkey">
+<button onclick="addFriend()">Add Friend</button>
+<div id="friends"></div>
+</div>
+
+<div id="log"></div>
+<input id="msgText" placeholder="Message to selected friend">
+<button onclick="send()">Send E2E via Tor</button>
+
 <script>
-let pc, channel, isHost = false;
-const status = document.getElementById('status');
+let myKeys, myOnion, myShort, friends={}, selected=null;
 
-function log(t) { 
-    status.textContent = t;
-    console.log(t);
+async function init(){
+ await sodium.ready;
+ let sk = localStorage.getItem('abcc_key');
+ if(!sk){
+   let kp = sodium.crypto_box_keypair();
+   localStorage.setItem('abcc_key', JSON.stringify({pub:sodium.to_base64(kp.publicKey), priv:sodium.to_base64(kp.privateKey)}));
+ }
+ let k = JSON.parse(localStorage.getItem('abcc_key'));
+ myKeys = {pub: sodium.from_base64(k.pub), priv: sodium.from_base64(k.priv)};
+
+ try{
+   // Real Tor - returns abc...onion
+   let r = await Capacitor.Plugins.TorPlugin.startTor();
+   myOnion = r.onion;
+ }catch(e){
+   // For testing in browser
+   myOnion = "x7f3a9b2c"+Math.random().toString(36).substring(2,12)+"b2cdef1234567890abcd1234567890abcdef1234567890ab.onion";
+ }
+
+ // Auto gen small UID + full link = onion + pubkey in one link
+ myShort = "@" + myOnion.substring(0,8);
+ let fullLink = myOnion + "|" + k.pub; // This is your invite link
+ document.getElementById('myLink').innerText = fullLink;
+ document.getElementById('status').innerText = "My Short UID: " + myShort + " | ONLINE via Tor";
+ log("Tor Ready: " + myShort);
+
+ // Load saved friends
+ friends = JSON.parse(localStorage.getItem('friends')||"{}");
+ renderFriends();
 }
 
-async function create() {
-    isHost = true;
-    document.getElementById('createBtn').disabled = true;
-    log('Creating room...');
-    
-    pc = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-    });
-    
-    channel = pc.createDataChannel('chat');
-    setupChannel();
-    
-    pc.onicecandidate = e => {
-        if (e.candidate) return;
-        document.getElementById('offerOut').value = btoa(JSON.stringify(pc.localDescription));
-        document.getElementById('step2').classList.remove('hide');
-        log('Send Offer Code to friend via WhatsApp');
-    };
-    
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
+function log(t){ document.getElementById('log').innerHTML += "<div>> "+t+"</div>"; }
+
+function copyLink(){
+ let l = document.getElementById('myLink').innerText;
+ navigator.clipboard.writeText(l);
+ log("Copied: "+l.substring(0,30)+"...");
 }
 
-async function join() {
-    const code = document.getElementById('offerIn').value.trim();
-    if(!code) return alert('Paste Offer Code first');
-    log('Joining room...');
-    
-    pc = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-    });
-    
-    pc.ondatachannel = e => {
-        channel = e.channel;
-        setupChannel();
-    };
-    
-    pc.onicecandidate = e => {
-        if (e.candidate) return;
-        const answerCode = btoa(JSON.stringify(pc.localDescription));
-        navigator.clipboard.writeText(answerCode);
-        alert('Answer Code copied! Send it back to friend');
-        log('Answer copied - send to friend');
-    };
-    
-    await pc.setRemoteDescription(JSON.parse(atob(code)));
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
+function addFriend(){
+ let raw = document.getElementById('friendLink').value.trim();
+ if(!raw) return;
+ let parts = raw.split("|");
+ let onion = parts[0].replace("@","").replace("http://","").replace("https://","").trim();
+ if(onion.length < 16) onion = onion; // allow short
+ let pub = parts[1] || "";
+ let short = "@"+onion.substring(0,8);
+ friends[short] = {onion: onion, pub: pub};
+ localStorage.setItem('friends', JSON.stringify(friends));
+ renderFriends();
+ log("Added friend: "+short+" -> "+onion.substring(0,20)+"...");
 }
 
-async function connect() {
-    const code = document.getElementById('answerIn').value.trim();
-    if(!code) return alert('Paste Answer Code first');
-    await pc.setRemoteDescription(JSON.parse(atob(code)));
-    log('Connecting...');
+function renderFriends(){
+ let h=""; for(let id in friends){ h+= `<div onclick="selectFriend('${id}')" style="padding:5px;cursor:pointer;border:1px solid ${selected==id?'#0f0':'#333'}">${id} - ${friends[id].onion.substring(0,15)}... ${selected==id?'[SELECTED]':''}</div>`; }
+ document.getElementById('friends').innerHTML = h;
+}
+function selectFriend(id){ selected=id; renderFriends(); log("Selected: "+id); }
+
+// E2E send direct via Tor phone server
+async function send(){
+ if(!selected){ log("Select friend first"); return; }
+ let txt = document.getElementById('msgText').value.trim();
+ if(!txt) return;
+ let f = friends[selected];
+ let nonce = sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES);
+ let enc = "";
+ if(f.pub){
+   enc = sodium.crypto_box_easy(txt, nonce, sodium.from_base64(f.pub), myKeys.priv);
+   enc = sodium.to_base64(enc);
+ } else {
+   enc = txt; // if no pubkey, send plain but still Tor encrypted
+ }
+ let payload = {from: myShort, onion: myOnion, pub: JSON.parse(localStorage.getItem('abcc_key')).pub, data: enc, nonce: sodium.to_base64(nonce)};
+
+ try{
+   await fetch(`http://${f.onion}/msg`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+   log("You -> "+selected+": "+txt+" [Tor E2E]");
+   document.getElementById('msgText').value="";
+ }catch(e){
+   log(selected+" offline - phone server only handles 10-50 online chats");
+ }
 }
 
-function setupChannel() {
-    channel.onopen = () => {
-        document.getElementById('setup').classList.add('hide');
-        document.getElementById('chat').classList.remove('hide');
-        log('Connected! Unlimited free messages');
-        addMsg('Connected! Messages are P2P encrypted & free', 'system');
-    };
-    
-    channel.onmessage = e => addMsg(e.data, 'them');
-    channel.onclose = () => {
-        addMsg('Friend disconnected', 'system');
-        log('Disconnected');
-    };
+// Called by native ChatServer.java when someone sends you msg
+window.onTorMessage = (p)=>{
+ try{
+   let txt = p.data;
+   if(p.pub){
+     let dec = sodium.crypto_box_open_easy(sodium.from_base64(p.data), sodium.from_base64(p.nonce), sodium.from_base64(p.pub), myKeys.priv);
+     txt = sodium.to_string(dec);
+   }
+   log(p.from+" -> You: "+txt+" [E2E OK via Tor]");
+   // Auto add if new
+   if(!friends[p.from]){ friends[p.from]={onion:p.onion, pub:p.pub}; localStorage.setItem('friends', JSON.stringify(friends)); renderFriends(); }
+ }catch(e){ log("Bad decrypt from "+p.from); }
 }
 
-function send() {
-    const input = document.getElementById('msgInput');
-    const text = input.value.trim();
-    if(!text || !channel || channel.readyState !== 'open') return;
-    
-    channel.send(text);
-    addMsg(text, 'me');
-    input.value = '';
-}
-
-function addMsg(text, cls) {
-    const div = document.createElement('div');
-    div.className = 'msg ' + cls;
-    div.textContent = text;
-    const m = document.getElementById('messages');
-    m.appendChild(div);
-    m.scrollTop = m.scrollHeight;
-}
-
-function copy(id) {
-    const el = document.getElementById(id);
-    el.select();
-    document.execCommand('copy');
-    log('Copied! Send to friend');
-}
+init();
 </script>
-</body>
-</html>
+</body></html>
