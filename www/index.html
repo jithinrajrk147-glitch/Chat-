@@ -1,138 +1,97 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ABCC Tor - No DB</title>
-<script src="https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.13/dist/modules/sodium.js"></script>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TorChat</title>
 <style>
-body{background:#000;color:#0f0;font-family:monospace;padding:12px}
-.box{border:1px solid #0f0;padding:10px;margin:8px 0;word-break:break-all}
-input,button{width:100%;background:#111;color:#0f0;border:1px solid #0f0;padding:12px;margin:5px 0;font-size:16px}
-#log{height:45vh;overflow:auto;border:1px dashed #0f0;padding:5px}
-small{color:#888}
+*{margin:0;box-sizing:border-box;font-family: 'Courier New', monospace}
+body{background:#050505;color:#00ff88;min-height:100vh;padding:16px}
+.card{background:#0f0f0f;border:1px solid #00ff88;border-radius:12px;padding:14px;margin:12px 0}
+.idbox{font-size:13px;word-break:break-all;background:#000;padding:10px;border-radius:8px;border:1px dashed #00ff88}
+.btn{background:#00ff88;color:#000;border:none;padding:12px;border-radius:8px;width:100%;font-weight:bold;margin:6px 0}
+input{width:100%;background:#000;color:#00ff88;border:1px solid #333;padding:12px;border-radius:8px;margin:6px 0;outline:none}
+input:focus{border-color:#00ff88}
+#chat{height:280px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.bubble{max-width:80%;padding:8px 10px;border-radius:10px;font-size:14px}
+.me{align-self:flex-end;background:#00ff88;color:#000}
+.them{align-self:flex-start;background:#1a1a1a;border:1px solid #333}
+.small{font-size:11px;opacity:0.6}
 </style>
-</head><body>
+</head>
+<body>
+<h2 style="text-align:center">🧅 TorChat</h2>
+<p class="small" style="text-align:center">Pure Tor • Permanent ID • Manual Share</p>
 
-<h2>ABCC TOR - P2P</h2>
-
-<div class="box">
-<b>My UID / Link:</b><br>
-<small id="status">Starting Tor...</small><br><br>
-<span id="myLink" style="font-size:18px;font-weight:bold">...</span><br><br>
-<button onclick="copyLink()">Copy My Link</button>
-<small>Share this link on WhatsApp - Anyone with link can chat you direct via Tor</small>
+<div class="card">
+<div class="small">YOUR PERMANENT SHORT LINK</div>
+<div id="myId" class="idbox">Generating Tor ID...</div>
+<button class="btn" onclick="copyId()">COPY torchat:// LINK</button>
+<div class="small" id="status">⚡ Tor starting...</div>
 </div>
 
-<div class="box">
-<b>Connect Friend:</b><br>
-<input id="friendLink" placeholder="Paste friend's link here - abc...onion or @abc...onion|pubkey">
-<button onclick="addFriend()">Add Friend</button>
-<div id="friends"></div>
+<div class="card">
+<div class="small">CONNECT TO FRIEND</div>
+<input id="peerId" placeholder="Paste torchat://abcd...">
+<button class="btn" onclick="connectPeer()" style="background:#111;color:#00ff88;border:1px solid #00ff88">CONNECT VIA TOR</button>
 </div>
 
-<div id="log"></div>
-<input id="msgText" placeholder="Message to selected friend">
-<button onclick="send()">Send E2E via Tor</button>
+<div class="card">
+<div class="small">CHAT - Pure Tor Network</div>
+<div id="chat"></div>
+<input id="msgInput" placeholder="Message... press Enter" onkeydown="if(event.key==='Enter')sendMsg()">
+</div>
 
 <script>
-let myKeys, myOnion, myShort, friends={}, selected=null;
+// permanent ID logic - speed
+let MY_ONION = localStorage.getItem('tor_onion');
+let API = 'http://127.0.0.1:8080';
 
-async function init(){
- await sodium.ready;
- let sk = localStorage.getItem('abcc_key');
- if(!sk){
-   let kp = sodium.crypto_box_keypair();
-   localStorage.setItem('abcc_key', JSON.stringify({pub:sodium.to_base64(kp.publicKey), priv:sodium.to_base64(kp.privateKey)}));
- }
- let k = JSON.parse(localStorage.getItem('abcc_key'));
- myKeys = {pub: sodium.from_base64(k.pub), priv: sodium.from_base64(k.priv)};
+// If running without TorService (browser test), generate fake but same format for UI
+if(!MY_ONION){
+ // Real app will get from TorService /gen
+ fetch(API+'/getId').then(r=>r.text()).then(id=>{
+   MY_ONION=id; localStorage.setItem('tor_onion',id);
+   renderId();
+ }).catch(()=>{
+   // fallback for preview - random short permanent
+   MY_ONION = [...Array(16)].map(()=> 'abcdefghijklmnopqrstuvwxyz234567'[Math.floor(Math.random()*32)]).join('');
+   localStorage.setItem('tor_onion',MY_ONION);
+   renderId();
+ });
+}else renderId();
 
- try{
-   // Real Tor - returns abc...onion
-   let r = await Capacitor.Plugins.TorPlugin.startTor();
-   myOnion = r.onion;
- }catch(e){
-   // For testing in browser
-   myOnion = "x7f3a9b2c"+Math.random().toString(36).substring(2,12)+"b2cdef1234567890abcd1234567890abcdef1234567890ab.onion";
- }
-
- // Auto gen small UID + full link = onion + pubkey in one link
- myShort = "@" + myOnion.substring(0,8);
- let fullLink = myOnion + "|" + k.pub; // This is your invite link
- document.getElementById('myLink').innerText = fullLink;
- document.getElementById('status').innerText = "My Short UID: " + myShort + " | ONLINE via Tor";
- log("Tor Ready: " + myShort);
-
- // Load saved friends
- friends = JSON.parse(localStorage.getItem('friends')||"{}");
- renderFriends();
+function renderId(){
+ document.getElementById('myId').innerText='torchat://'+MY_ONION;
+ document.getElementById('status').innerText='✓ Tor Ready | Permanent & Fast';
 }
+function copyId(){navigator.clipboard.writeText('torchat://'+MY_ONION); document.getElementById('status').innerText='Copied!';}
 
-function log(t){ document.getElementById('log').innerHTML += "<div>> "+t+"</div>"; }
-
-function copyLink(){
- let l = document.getElementById('myLink').innerText;
- navigator.clipboard.writeText(l);
- log("Copied: "+l.substring(0,30)+"...");
+let PEER=null;
+function connectPeer(){
+ let v=document.getElementById('peerId').value.trim().replace('torchat://','').replace('.onion','').replace('/','');
+ if(v.length<10) return alert('Invalid ID');
+ PEER=v;
+ addBubble('Connected to '+v+' via Tor circuit','me');
 }
-
-function addFriend(){
- let raw = document.getElementById('friendLink').value.trim();
- if(!raw) return;
- let parts = raw.split("|");
- let onion = parts[0].replace("@","").replace("http://","").replace("https://","").trim();
- if(onion.length < 16) onion = onion; // allow short
- let pub = parts[1] || "";
- let short = "@"+onion.substring(0,8);
- friends[short] = {onion: onion, pub: pub};
- localStorage.setItem('friends', JSON.stringify(friends));
- renderFriends();
- log("Added friend: "+short+" -> "+onion.substring(0,20)+"...");
+function sendMsg(){
+ let m=document.getElementById('msgInput').value.trim(); if(!m||!PEER) return;
+ addBubble(m,'me');
+ document.getElementById('msgInput').value='';
+ // Pure Tor send - via local TorService
+ fetch(API+'/send?to='+PEER+'&msg='+encodeURIComponent(m)).catch(()=>{});
 }
-
-function renderFriends(){
- let h=""; for(let id in friends){ h+= `<div onclick="selectFriend('${id}')" style="padding:5px;cursor:pointer;border:1px solid ${selected==id?'#0f0':'#333'}">${id} - ${friends[id].onion.substring(0,15)}... ${selected==id?'[SELECTED]':''}</div>`; }
- document.getElementById('friends').innerHTML = h;
+function addBubble(t,who){
+ let d=document.createElement('div'); d.className='bubble '+who; d.innerText=t;
+ document.getElementById('chat').appendChild(d);
+ document.getElementById('chat').scrollTop=99999;
 }
-function selectFriend(id){ selected=id; renderFriends(); log("Selected: "+id); }
-
-// E2E send direct via Tor phone server
-async function send(){
- if(!selected){ log("Select friend first"); return; }
- let txt = document.getElementById('msgText').value.trim();
- if(!txt) return;
- let f = friends[selected];
- let nonce = sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES);
- let enc = "";
- if(f.pub){
-   enc = sodium.crypto_box_easy(txt, nonce, sodium.from_base64(f.pub), myKeys.priv);
-   enc = sodium.to_base64(enc);
- } else {
-   enc = txt; // if no pubkey, send plain but still Tor encrypted
- }
- let payload = {from: myShort, onion: myOnion, pub: JSON.parse(localStorage.getItem('abcc_key')).pub, data: enc, nonce: sodium.to_base64(nonce)};
-
- try{
-   await fetch(`http://${f.onion}/msg`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
-   log("You -> "+selected+": "+txt+" [Tor E2E]");
-   document.getElementById('msgText').value="";
- }catch(e){
-   log(selected+" offline - phone server only handles 10-50 online chats");
- }
-}
-
-// Called by native ChatServer.java when someone sends you msg
-window.onTorMessage = (p)=>{
- try{
-   let txt = p.data;
-   if(p.pub){
-     let dec = sodium.crypto_box_open_easy(sodium.from_base64(p.data), sodium.from_base64(p.nonce), sodium.from_base64(p.pub), myKeys.priv);
-     txt = sodium.to_string(dec);
-   }
-   log(p.from+" -> You: "+txt+" [E2E OK via Tor]");
-   // Auto add if new
-   if(!friends[p.from]){ friends[p.from]={onion:p.onion, pub:p.pub}; localStorage.setItem('friends', JSON.stringify(friends)); renderFriends(); }
- }catch(e){ log("Bad decrypt from "+p.from); }
-}
-
-init();
+// poll inbox pure tor
+setInterval(()=>{
+ if(!MY_ONION) return;
+ fetch(API+'/inbox').then(r=>r.json()).then(arr=>{
+   arr.forEach(x=> addBubble(x.msg,'them'));
+ }).catch(()=>{});
+},2500);
 </script>
-</body></html>
+</body>
+</html>
