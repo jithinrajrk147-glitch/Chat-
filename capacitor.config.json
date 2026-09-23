@@ -1,1 +1,5 @@
-{"appId":"com.abcc.chat","appName":"ABCC Tor","webDir":"www"}
+{
+  "appId": "com.torchatsimple",
+  "appName": "TorChat",
+  "webDir": "www"
+}
