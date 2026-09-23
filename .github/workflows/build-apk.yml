@@ -1,4 +1,4 @@
-name: Build APK
+name: Build Real Tor APK
 on: [push]
 jobs:
   build:
@@ -12,12 +12,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm init -y && npm i @capacitor/core @capacitor/cli @capacitor/android && npx cap init TorChat com.torchatsimple --web-dir=www
-      - run: npx cap add android || true
-      - run: npx cap copy android || true
-      - run: mkdir -p android/app/src/main/java/com/torchatsimple && cp app/src/main/java/com/torchatsimple/TorService.java android/app/src/main/java/com/torchatsimple/ || true
+      - run: npm install
+      - run: npx cap add android
+      - run: npx cap copy android
+      - run: |
+          echo "maven { url \"https://jitpack.io\" }" >> android/build.gradle
       - run: chmod +x android/gradlew && cd android &&./gradlew assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: torchat-apk
+          name: TorChat-REAL-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
