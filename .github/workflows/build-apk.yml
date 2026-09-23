@@ -1,46 +1,46 @@
 name: Build APK
 on: [push]
 jobs:
- build:
-  runs-on: ubuntu-latest
-  steps:
-   - uses: actions/checkout@v4
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-   - name: Setup Java 21 - REQUIRED FOR CAPACITOR 6
-     uses: actions/setup-java@v4
-     with:
-       distribution: temurin
-       java-version: '21'
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
 
-   - name: Setup Node
-     uses: actions/setup-node@v4
-     with:
-       node-version: 20
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-   - name: Install Capacitor
-     run: |
-       npm init -y
-       npm i @capacitor/core @capacitor/cli @capacitor/android
-       npx cap init TorChat com.torchatsimple --web-dir=www
+      - name: Install Capacitor
+        run: |
+          npm init -y
+          npm i @capacitor/core @capacitor/cli @capacitor/android
+          npx cap init TorChat com.torchatsimple --web-dir=www
 
-   - name: Add Android Platform
-     run: |
-       npx cap add android || true
-       npx cap copy android
+      - name: Add Android
+        run: |
+          npx cap add android || true
+          npx cap copy android || true
 
-   - name: Fix TorService location
-     run: |
-       mkdir -p android/app/src/main/java/com/torchatsimple/
-       cp app/src/main/java/com/torchatsimple/TorService.java android/app/src/main/java/com/torchatsimple/ || true
+      - name: Copy TorService
+        run: |
+          mkdir -p android/app/src/main/java/com/torchatsimple/
+          cp app/src/main/java/com/torchatsimple/TorService.java android/app/src/main/java/com/torchatsimple/ || echo "no torservice yet"
 
-   - name: Build APK
-     run: |
-       cd android
-       chmod +x gradlew
-      ./gradlew assembleDebug --stacktrace
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+         ./gradlew assembleDebug
 
-   - name: Upload APK
-     uses: actions/upload-artifact@v4
-     with:
-       name: torchat-pure-tor-apk
-       path: android/app/build/outputs/apk/debug/*.apk
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: torchat-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
