@@ -26,7 +26,7 @@ jobs:
           if [! -f "capacitor.config.json" ]; then
             echo '{"appId":"com.chat.tor","appName":"Chat Tor","webDir":"www","bundledWebRuntime":false}' > capacitor.config.json
             mkdir -p www
-            cp index.html www/ || echo "No index.html"
+            cp index.html www/ 2>/dev/null || echo "no index.html in root"
           fi
           if [! -f "package.json" ]; then
             echo '{"name":"chat-tor","dependencies":{"@capacitor/core":"latest","@capacitor/android":"latest"}}' > package.json
@@ -46,7 +46,8 @@ jobs:
           chmod +x gradlew
          ./gradlew assembleDebug --no-daemon
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: apk
           path: android/app/build/outputs/apk/debug/*.apk
